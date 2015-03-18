@@ -190,7 +190,9 @@ static const NSString * ItemStatusContext;
 				return;
 			}
 			
-			BOOL bOk = [self createAssetReaderWithTimeRange:CMTimeRangeMake(kCMTimeZero, duration)];
+			
+			
+			BOOL bOk = [self createAssetReaderWithTimeRange:CMTimeRangeMake(CMTimeMake(duration.value-1000, duration.timescale), duration)];
 			if(bOk == NO) {
 				NSLog(@"problem with creating asset reader.");
 				if(bAsync == NO){
@@ -257,8 +259,15 @@ static const NSString * ItemStatusContext;
 
 - (BOOL)createAssetReaderWithTimeRange:(CMTimeRange)timeRange {
 	
+	NSLog(@"createAssetReaderWithTimeRange");
+	
 	videoSampleTime = videoSampleTimePrev = timeRange.start;
 	audioSampleTime = timeRange.start;
+	
+	// alter range to one frame, in case we are stepping backwards
+	if (self.player.rate < 0.0) {
+		timeRange.duration = CMTimeMake(timeRange.start.value + timeRange.start.timescale, timeRange.start.timescale);
+	}
 	
 	NSError *error = nil;
 	self.assetReader = [AVAssetReader assetReaderWithAsset:self.asset error:&error];
@@ -413,9 +422,14 @@ static const NSString * ItemStatusContext;
 			if([self.delegate respondsToSelector:@selector(playerReady)]) {
 				[self.delegate playerReady];
 			}
-			if(bAutoPlayOnLoad || bPlayStateBeforeLoad) {
-				[self play];
-			}
+			
+			CMTime durTime = self.player.currentItem.asset.duration;
+			[self.player seekToTime:durTime toleranceBefore:kCMTimeZero toleranceAfter:kCMTimeZero];
+			self.player.rate = -1.0;
+			
+//			if(bAutoPlayOnLoad || bPlayStateBeforeLoad) {
+//				[self play];
+//			}
 		});
 		return;
 	}
@@ -486,6 +500,7 @@ static const NSString * ItemStatusContext;
 	BOOL bTimeChanged = CMTimeCompare(time, currentTime) != 0;
 	currentTime = time;
 	
+	
 	if(bUpdateFirstFrame) {
 		
 		// this forces the first frame to be updated.
@@ -523,10 +538,43 @@ static const NSString * ItemStatusContext;
 		[self createAssetReaderWithTimeRange:CMTimeRangeMake(currentTime, duration)];
 	}
 	
-	if(self.assetReader.status != AVAssetReaderStatusReading) {
+	
+	switch (self.assetReader.status) {
+		case AVAssetReaderStatusUnknown:
+			NSLog(@"self.assetReader.status: AVAssetReaderStatusUnknown");
+			break;
+			
+		case AVAssetReaderStatusReading:
+			NSLog(@"self.assetReader.status: AVAssetReaderStatusReading");
+			break;
+			
+		case AVAssetReaderStatusCompleted:
+			NSLog(@"self.assetReader.status: AVAssetReaderStatusCompleted");
+			break;
+			
+		case AVAssetReaderStatusFailed:
+			NSLog(@"self.assetReader.status: AVAssetReaderStatusFailed");
+			break;
+			
+		case AVAssetReaderStatusCancelled:
+			NSLog(@"self.assetReader.status: AVAssetReaderStatusCancelled");
+			break;
+			
+		default:
+			break;
+	}
+	
+	
+	
+	if(self.assetReader.status != AVAssetReaderStatusReading && self.assetReader.status != AVAssetReaderStatusCompleted) {
+		NSLog(@"reader not reading");
+		
 		bNewFrame = NO;
 		return;
 	}
+	
+	
+	
 	
 	//---------------------------------------------------------- audio buffer.
 	while(bSampleAudio == true &&                                   // audio sampling is on.
@@ -555,39 +603,78 @@ static const NSString * ItemStatusContext;
 		}
 	}
 	
-	//---------------------------------------------------------- video buffer.
 	BOOL bCopiedNewSamples = NO;
-	while(bSampleVideo == true &&                                       // video sampling is on.
-		  self.assetReaderVideoTrackOutput != nil &&                    // asset has a video track.
-		  self.assetReader.status == AVAssetReaderStatusReading &&      // asset read is in reading state.
-		  ((CMTimeCompare(videoSampleTime, currentTime) == -1) ||        // timestamp is less then currentTime.
-		   (CMTimeCompare(videoSampleTime, currentTime) == 0)))           // timestamp is equal currentTime.
+	// read one
+	if (bSampleVideo &&
+		self.assetReaderVideoTrackOutput != nil &&
+		self.assetReader.status == AVAssetReaderStatusReading)
 	{
+		
 		CMSampleBufferRef videoBufferTemp;
 		@try {
 			videoBufferTemp = [self.assetReaderVideoTrackOutput copyNextSampleBuffer];
-		} @catch (NSException * e) {
-			break;
-		}
-		
-		if(videoBufferTemp) {
-			if(videoSampleBuffer) { // release old buffer.
-				CFRelease(videoSampleBuffer);
-				videoSampleBuffer = nil;
+			
+			if(videoBufferTemp) {
+				if(videoSampleBuffer) { // release old buffer.
+					CFRelease(videoSampleBuffer);
+					videoSampleBuffer = nil;
+				}
+				
+				NSLog(@"got samplebuffer");
+				
+				videoSampleBuffer = videoBufferTemp; // save reference to new buffer.
+				
+				videoSampleTime = CMSampleBufferGetPresentationTimeStamp(videoSampleBuffer);
+				
+				bCopiedNewSamples = YES;
+			} else {
+				NSLog(@"no sample buffer");
 			}
-			videoSampleBuffer = videoBufferTemp; // save reference to new buffer.
 			
-			videoSampleTime = CMSampleBufferGetPresentationTimeStamp(videoSampleBuffer);
-			
-			bCopiedNewSamples = YES;
-		} else {
-			break;
+		} @catch (NSException * e) {
+			NSLog(@"could not get samplebuffer: %@", e);
 		}
 	}
 	
+	
+//	//---------------------------------------------------------- video buffer.
+//	BOOL bCopiedNewSamples = NO;
+//	while(bSampleVideo == true &&                                       // video sampling is on.
+//		  self.assetReaderVideoTrackOutput != nil &&                    // asset has a video track.
+//		  self.assetReader.status == AVAssetReaderStatusReading &&      // asset read is in reading state.
+//		  ((CMTimeCompare(videoSampleTime, currentTime) == 1) ||        // timestamp is less then currentTime.
+//		   (CMTimeCompare(videoSampleTime, currentTime) == 0)))           // timestamp is equal currentTime.
+//	{
+//		CMSampleBufferRef videoBufferTemp;
+//		@try {
+//			videoBufferTemp = [self.assetReaderVideoTrackOutput copyNextSampleBuffer];
+//		} @catch (NSException * e) {
+//			break;
+//		}
+//		
+//		if(videoBufferTemp) {
+//			if(videoSampleBuffer) { // release old buffer.
+//				CFRelease(videoSampleBuffer);
+//				videoSampleBuffer = nil;
+//			}
+//			
+//			NSLog(@"got samplebuffer");
+//			
+//			videoSampleBuffer = videoBufferTemp; // save reference to new buffer.
+//			
+//			videoSampleTime = CMSampleBufferGetPresentationTimeStamp(videoSampleBuffer);
+//			
+//			bCopiedNewSamples = YES;
+//		} else {
+//			NSLog(@"no sample buffer");
+//			break;
+//		}
+//	}
+	
 	if(bCopiedNewSamples == true) {
-		bNewFrame = CMTimeCompare(videoSampleTime, videoSampleTimePrev) == 1;
-		if(bNewFrame) {
+		BOOL sameFrame = CMTimeCompare(videoSampleTime, videoSampleTimePrev) == 0;
+		bNewFrame = sameFrame;
+		if(!sameFrame) {
 			videoSampleTimePrev = videoSampleTime;
 		}
 		
@@ -595,6 +682,19 @@ static const NSString * ItemStatusContext;
 			[self.delegate playerDidProgress];
 		}
 	}
+	
+	
+
+	NSLog(@"videoSampleTime: %lld", videoSampleTime.value);
+	
+	if(self.player.rate < 0.0){
+		// seek to new position
+		NSLog(@"seek to new time...");
+		[self seekToTime:currentTime];
+		
+	}
+	
+	
 }
 
 - (void)addTimeObserverToPlayer {
@@ -651,7 +751,7 @@ static const NSString * ItemStatusContext;
 			[self seekToStart];
 			bFinished = NO;
 		}
-		[_player setRate:speed];
+		[_player setRate:-1.0];
 	} else {
 		[_player pause];
 	}
@@ -670,6 +770,7 @@ static const NSString * ItemStatusContext;
 	 withTolerance:(CMTime)tolerance {
 	
 	if(![self isReady]) {
+		NSLog(@"not ready");
 		return;
 	}
 	
@@ -687,12 +788,16 @@ static const NSString * ItemStatusContext;
 	time = CMTimeMaximum(time, kCMTimeZero);
 	time = CMTimeMinimum(time, duration);
 	
+	NSLog(@"seek to time");
+	
 	[_player seekToTime:time
 		toleranceBefore:tolerance
 		 toleranceAfter:tolerance
 	  completionHandler:^(BOOL finished) {
 		  
 		  bSeeking = NO;
+		  
+		  NSLog(@"seeking done");
 		  
 		  if([self.delegate respondsToSelector:@selector(playerDidFinishSeeking)]) {
 			  [self.delegate playerDidFinishSeeking];
