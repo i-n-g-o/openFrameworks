@@ -14,6 +14,11 @@ static NSString * const kTracksKey = @"tracks";
 static NSString * const kStatusKey = @"status";
 static NSString * const kRateKey = @"rate";
 
+//---------------------------------------------------------- video player - private interface.
+@interface ofAVFoundationVideoPlayer()
+- (void)releaseAssetReaderAsync;
+@end
+
 //---------------------------------------------------------- video player.
 @implementation ofAVFoundationVideoPlayer
 
@@ -585,6 +590,52 @@ static const void *PlayerRateContext = &ItemStatusContext;
 }
 
 
+- (void)releaseAssetReaderAsync
+{
+	if (self.assetReader == nil) {
+		return;
+	}
+	
+	__block AVAssetReader* currentReader = _assetReader;
+	__block AVAssetReaderTrackOutput* currentVideoTrack = _assetReaderVideoTrackOutput;
+	__block AVAssetReaderTrackOutput* currentAudioTrack = _assetReaderAudioTrackOutput;
+	
+	_assetReader = nil;
+	self.assetReader = nil;
+	
+	_assetReaderVideoTrackOutput = nil;
+	self.assetReaderVideoTrackOutput = nil;
+	
+	_assetReaderAudioTrackOutput = nil;
+	self.assetReaderAudioTrackOutput = nil;
+	
+	dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+		
+		@autoreleasepool {
+			
+			[asyncLock lock];
+			
+			if (currentReader != nil) {
+				[currentReader cancelReading];
+				[currentReader autorelease];
+				
+				if (currentVideoTrack != nil) {
+					[currentVideoTrack autorelease];
+					currentVideoTrack = nil;
+				}
+				
+				if (currentAudioTrack != nil) {
+					[currentAudioTrack autorelease];
+					currentAudioTrack = nil;
+				}
+			}
+			
+			[asyncLock unlock];
+		}
+	});
+}
+
+
 #pragma mark -
 - (BOOL)createAssetReaderWithTimeRange:(CMTimeRange)timeRange {
 	
@@ -594,11 +645,8 @@ static const void *PlayerRateContext = &ItemStatusContext;
 
 	NSError *error = nil;
 	
-	// safety
-	if (self.assetReader != nil) {
-		[self.assetReader cancelReading];
-		self.assetReader = nil;
-	}
+	// safety - release reader
+	[self releaseAssetReaderAsync];
 	
 	// create new asset reader
 	self.assetReader = [AVAssetReader assetReaderWithAsset:self.asset error:&error];
@@ -1176,13 +1224,9 @@ static const void *PlayerRateContext = &ItemStatusContext;
 		bFinished = NO;
 	}
 	
-	// TODO?
-	// expensive call?
-	// destroy it on a thread?
-	[self.assetReader cancelReading];
-	self.assetReader = nil;
-	self.assetReaderVideoTrackOutput = nil;
-	self.assetReaderAudioTrackOutput = nil;
+	
+	// release current reader
+	[self releaseAssetReaderAsync];
 	
 	bSeeking = YES;
 	
