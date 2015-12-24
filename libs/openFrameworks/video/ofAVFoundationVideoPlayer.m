@@ -1422,22 +1422,9 @@ static const void *PlayerRateContext = &ItemStatusContext;
 		return;
 	}
 	
-//	NSArray * audioTracks = [self.playerItem.asset tracksWithMediaType:AVMediaTypeAudio];
-//	NSMutableArray * allAudioParams = [NSMutableArray array];
-//	for(AVAssetTrack * track in audioTracks) {
-//		AVMutableAudioMixInputParameters * audioInputParams = [AVMutableAudioMixInputParameters audioMixInputParameters];
-//		[audioInputParams setVolume:volume atTime:kCMTimeZero];
-//		[audioInputParams setTrackID:[track trackID]];
-//		[allAudioParams addObject:audioInputParams];
-//	}
-//	
-//	AVMutableAudioMix * audioMix = [AVMutableAudioMix audioMix];
-//	[audioMix setInputParameters:allAudioParams];
-//	
-//	[self.playerItem setAudioMix:audioMix];
+	volume = value;
 	
 	_player.volume = volume;
-	
 }
 
 - (float)getVolume {
