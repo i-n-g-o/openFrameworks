@@ -85,6 +85,8 @@ typedef enum _playerLoopType{
 	
 	NSLock* asyncLock;
 	NSCondition* deallocCond;
+	
+	OSType pixelFormatType;
 }
 
 @property (nonatomic, retain) AVPlayer * player;

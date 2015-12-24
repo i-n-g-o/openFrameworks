@@ -5,6 +5,7 @@
 //
 
 #import "ofAVFoundationVideoPlayer.h"
+#import "pixelFormatUtils.h"
 
 #define IS_OS_6_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] >= 6.0)
 
@@ -87,6 +88,8 @@ static const void *PlayerRateContext = &ItemStatusContext;
 		// do not sample audio by default
 		// we are lacking interfaces for audiodata
 		bSampleAudio = NO;
+		
+		pixelFormatType = kCVPixelFormatType_422YpCbCr8;
 	}
 	return self;
 }
@@ -94,11 +97,20 @@ static const void *PlayerRateContext = &ItemStatusContext;
 #if USE_VIDEO_OUTPUT
 - (void)createVideoOutput
 {
+	NSLog(@"create videoOutput with pixelFormat: %@", [pixelFormatUtils getPixelFormatString:pixelFormatType]);
+	
 #ifdef TARGET_IOS
-	NSDictionary *pixBuffAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32BGRA)};
+	NSDictionary *pixBuffAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(pixelFormatType)};
 #elif defined(TARGET_OSX)
-	NSDictionary *pixBuffAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(kCVPixelFormatType_32ARGB)};
+	NSDictionary *pixBuffAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(pixelFormatType)};
 #endif
+	
+	// ios: kCVPixelFormatType_32BGRA
+	// osx: kCVPixelFormatType_32ARGB
+	// prores:
+	//kCVPixelFormatType_422YpCbCr8 // OF_PIXELS_UYVY
+	// h264:
+	// CVPixelFormatType_420YpCbCr8BiPlanarVideoRange, kCVPixelFormatType_420YpCbCr8BiPlanarFullRange
 	
 	self.videoOutput = [[[AVPlayerItemVideoOutput alloc] initWithPixelBufferAttributes:pixBuffAttributes] autorelease];
 	if (!self.videoOutput) {
@@ -136,6 +148,9 @@ static const void *PlayerRateContext = &ItemStatusContext;
 	
 	[super dealloc];
 }
+
+
+
 
 
 
@@ -282,8 +297,79 @@ static const void *PlayerRateContext = &ItemStatusContext;
 			
 			AVAssetTrack * videoTrack = [videoTracks objectAtIndex:0];
 			frameRate = videoTrack.nominalFrameRate;
-			videoWidth = [videoTrack naturalSize].width;
-			videoHeight = [videoTrack naturalSize].height;
+			
+			// get format description
+			CMFormatDescriptionRef formatDescription = NULL;
+			NSArray* formatDescriptions = videoTrack.formatDescriptions;
+			if ([formatDescriptions count] > 0) {
+				formatDescription = (CMFormatDescriptionRef)[formatDescriptions objectAtIndex:0];
+			}
+
+			if (formatDescription) {
+				CGSize trackDimensions = CMVideoFormatDescriptionGetPresentationDimensions(formatDescription, false, false);
+				
+				videoWidth = trackDimensions.width;
+				videoHeight = trackDimensions.height;
+				
+
+				CMVideoCodecType codecType = CMVideoFormatDescriptionGetCodecType(formatDescription);
+				NSLog(@"codecType: %u", (unsigned int)codecType);
+				OSType pixelFormat = [pixelFormatUtils pixelFormatBestGuess:codecType];
+				
+				// recreate videoOutput if pixelformat changed
+				if (pixelFormatType != pixelFormat) {
+					// recreate video-output
+					pixelFormatType = pixelFormat;
+#if USE_VIDEO_OUTPUT
+					if (self.videoOutput != nil) {
+						self.videoOutput = nil;
+					}
+					[self createVideoOutput];
+#endif
+				}
+
+				
+//				// get 
+//				CFDictionaryRef extDict = CMFormatDescriptionGetExtensions(formatDescription);
+//				if (extDict) {
+//					CFIndex count = CFDictionaryGetCount(extDict);
+//					NSLog(@"has extDict: %ld", count);
+//					
+//					
+//					const CFStringRef keys[count];
+//					const CFStringRef values[count];
+//					CFDictionaryGetKeysAndValues(extDict, (const void**)&keys, (const void**)&values);
+//					
+//					for (CFIndex i=0; i<count; i++) {
+//						NSLog(@"%ld: %@", i, keys[i]);
+//					}
+//					
+//					CFStringRef fname = (CFStringRef)CFDictionaryGetValue(extDict, CFSTR("FormatName"));
+//					NSLog(@"FormatName: %@", fname);
+//				}
+				
+				
+				// get clean aperture?
+				CFDictionaryRef cleanApertureFromCMFormatDescription = CMFormatDescriptionGetExtension(formatDescription, kCMFormatDescriptionExtension_CleanAperture);
+				if (cleanApertureFromCMFormatDescription)
+				{
+					CFNumberRef w = CFDictionaryGetValue(cleanApertureFromCMFormatDescription, kCMFormatDescriptionKey_CleanApertureWidth);
+					
+					CFNumberRef h = CFDictionaryGetValue(cleanApertureFromCMFormatDescription, kCMFormatDescriptionKey_CleanApertureHeight);
+					
+					CFNumberRef ox = CFDictionaryGetValue(cleanApertureFromCMFormatDescription, kCMFormatDescriptionKey_CleanApertureHorizontalOffset);
+					
+					CFNumberRef oy = CFDictionaryGetValue(cleanApertureFromCMFormatDescription, kCMFormatDescriptionKey_CleanApertureVerticalOffset);
+					
+					NSLog(@"clean aperture: %ld x %ld", [(NSNumber*)w longValue], [(NSNumber*)h longValue]);
+					NSLog(@"clean aperture offset: %ld - %ld", [(NSNumber*)ox longValue], [(NSNumber*)oy longValue]);
+				}
+				
+			} else {
+				// get width and height from videotrack
+				videoWidth = [videoTrack naturalSize].width;
+				videoHeight = [videoTrack naturalSize].height;
+			}
 			
 			NSLog(@"video loaded at %li x %li @ %f fps", (long)videoWidth, (long)videoHeight, frameRate);
 			
@@ -352,6 +438,8 @@ static const void *PlayerRateContext = &ItemStatusContext;
 							 context:&PlayerRateContext];
 			// add timeobserver?
 			[self addTimeObserverToPlayer];
+			
+			_player.volume = volume;
 			
 			// loaded
 			bLoaded = true;
@@ -616,10 +704,10 @@ static const void *PlayerRateContext = &ItemStatusContext;
 	if (bSampleVideo) {
 		NSMutableDictionary * videoOutputSettings = [[[NSMutableDictionary alloc] init] autorelease];
 #ifdef TARGET_IOS
-		[videoOutputSettings setObject:[NSNumber numberWithInt:kCVPixelFormatType_32BGRA]
+		[videoOutputSettings setObject:[NSNumber numberWithInt:pixelFormatType]
 								forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
 #elif defined(TARGET_OSX)
-		[videoOutputSettings setObject:[NSNumber numberWithInt:kCVPixelFormatType_32ARGB]
+		[videoOutputSettings setObject:[NSNumber numberWithInt:pixelFormatType]
 								forKey:(NSString*)kCVPixelBufferPixelFormatTypeKey];
 #endif
 		
@@ -1324,6 +1412,8 @@ static const void *PlayerRateContext = &ItemStatusContext;
 
 - (void)setVolume:(float)value {
 	
+	volume = value;
+	
 	if(![self isReady]) {
 		return;
 	}
@@ -1332,21 +1422,22 @@ static const void *PlayerRateContext = &ItemStatusContext;
 		return;
 	}
 	
-	volume = value;
+//	NSArray * audioTracks = [self.playerItem.asset tracksWithMediaType:AVMediaTypeAudio];
+//	NSMutableArray * allAudioParams = [NSMutableArray array];
+//	for(AVAssetTrack * track in audioTracks) {
+//		AVMutableAudioMixInputParameters * audioInputParams = [AVMutableAudioMixInputParameters audioMixInputParameters];
+//		[audioInputParams setVolume:volume atTime:kCMTimeZero];
+//		[audioInputParams setTrackID:[track trackID]];
+//		[allAudioParams addObject:audioInputParams];
+//	}
+//	
+//	AVMutableAudioMix * audioMix = [AVMutableAudioMix audioMix];
+//	[audioMix setInputParameters:allAudioParams];
+//	
+//	[self.playerItem setAudioMix:audioMix];
 	
-	NSArray * audioTracks = [self.playerItem.asset tracksWithMediaType:AVMediaTypeAudio];
-	NSMutableArray * allAudioParams = [NSMutableArray array];
-	for(AVAssetTrack * track in audioTracks) {
-		AVMutableAudioMixInputParameters * audioInputParams = [AVMutableAudioMixInputParameters audioMixInputParameters];
-		[audioInputParams setVolume:volume atTime:kCMTimeZero];
-		[audioInputParams setTrackID:[track trackID]];
-		[allAudioParams addObject:audioInputParams];
-	}
+	_player.volume = volume;
 	
-	AVMutableAudioMix * audioMix = [AVMutableAudioMix audioMix];
-	[audioMix setInputParameters:allAudioParams];
-	
-	[self.playerItem setAudioMix:audioMix];
 }
 
 - (float)getVolume {
