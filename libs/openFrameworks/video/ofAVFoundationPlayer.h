@@ -119,5 +119,8 @@ protected:
 	CVOpenGLTextureCacheRef _videoTextureCache = nullptr;
 	CVOpenGLTextureRef _videoTextureRef = nullptr;
 #endif
+	
+private:
+	void setPixelFormatForPlayer();
 };
 

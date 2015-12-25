@@ -7,11 +7,12 @@
 //--------------------------------------------------------------
 #import "ofAVFoundationPlayer.h"
 #import "ofAVFoundationVideoPlayer.h"
+#include "ofCVPixelFormatConversion.h"
 
 //--------------------------------------------------------------
 ofAVFoundationPlayer::ofAVFoundationPlayer() {
     videoPlayer = nullptr;
-    pixelFormat = OF_PIXELS_RGBA;
+    pixelFormat = OF_PIXELS_NATIVE;
 	
     bFrameNew = false;
     bResetPixels = false;
@@ -79,6 +80,9 @@ bool ofAVFoundationPlayer::loadPlayer(string name, bool bAsync) {
 	
     // reuse videoplayer
     if(videoPlayer != nullptr) {
+		
+		setPixelFormatForPlayer();
+		
 		// use existing player
 		return [videoPlayer loadWithURL:url async:bAsync];
     }
@@ -87,6 +91,7 @@ bool ofAVFoundationPlayer::loadPlayer(string name, bool bAsync) {
     videoPlayer = [[ofAVFoundationVideoPlayer alloc] init];
     [videoPlayer setWillBeUpdatedExternally:YES];
 
+	setPixelFormatForPlayer();
     bool bLoaded = [videoPlayer loadWithURL:url async:bAsync];
 	
 	pixels.clear();
@@ -130,6 +135,21 @@ bool ofAVFoundationPlayer::loadPlayer(string name, bool bAsync) {
     }
 	
     return bLoaded;
+}
+
+void ofAVFoundationPlayer::setPixelFormatForPlayer() {
+	if(videoPlayer == nullptr) {
+		return;
+	}
+	
+	// set pixelformat
+	if (pixelFormat == OF_PIXELS_NATIVE) {
+		videoPlayer.figureBestPixelFormat = YES;
+	} else {
+		videoPlayer.figureBestPixelFormat = NO;
+		videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
+	}
+
 }
 
 //--------------------------------------------------------------
@@ -182,9 +202,23 @@ void ofAVFoundationPlayer::close() {
 //--------------------------------------------------------------
 bool ofAVFoundationPlayer::setPixelFormat(ofPixelFormat value) {
     bool bValid = false;
+	bValid = bValid || (value == OF_PIXELS_NATIVE);
+	
+	// rgb
     bValid = bValid || (value == OF_PIXELS_RGB);
     bValid = bValid || (value == OF_PIXELS_RGBA);
-    
+	
+	// YUV
+	// 420-sampling types
+	bValid = bValid || (value == OF_PIXELS_NV12);
+	bValid = bValid || (value == OF_PIXELS_NV21);
+	bValid = bValid || (value == OF_PIXELS_YV12);
+	bValid = bValid || (value == OF_PIXELS_I420);
+	// 422-sampling types
+	bValid = bValid || (value == OF_PIXELS_YUY2);
+	bValid = bValid || (value == OF_PIXELS_UYVY);
+	
+	
     if(bValid == false) {
         ofLogWarning("ofAVFoundationPlayer") << "setPixelFormat(): unsupported ofPixelFormat, " << value << ".";
         return false;
@@ -292,17 +326,24 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
         return pixels;
     }
     
-    if(bResetPixels == true) {
-        pixels.allocate(getWidth(), getHeight(), pixelFormat);
-        bResetPixels = false;
-    }
-    
     CVImageBufferRef imageBuffer = [videoPlayer getCurrentFrame];
     
     CVPixelBufferLockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
     
     unsigned long imageBufferPixelFormat = CVPixelBufferGetPixelFormatType(imageBuffer);
-    
+	
+	if(bResetPixels == true) {
+		
+		if (pixelFormat == OF_PIXELS_NATIVE) {
+			ofLogNotice() << "is native";
+			pixels.allocate(getWidth(), getHeight(), getOFPixelFormat(imageBufferPixelFormat));
+		} else {
+			pixels.allocate(getWidth(), getHeight(), pixelFormat);
+		}
+		
+		bResetPixels = false;
+	}
+	
     vImage_Buffer src = {
         CVPixelBufferGetBaseAddress(imageBuffer),
         CVPixelBufferGetHeight(imageBuffer),

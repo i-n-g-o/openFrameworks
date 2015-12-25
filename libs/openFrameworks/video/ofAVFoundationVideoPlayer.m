@@ -5,7 +5,7 @@
 //
 
 #import "ofAVFoundationVideoPlayer.h"
-#import "pixelFormatUtils.h"
+#include "ofCMCodecCVPixelFormat.h"
 
 #define IS_OS_6_OR_LATER    ([[[UIDevice currentDevice] systemVersion] floatValue] >= 6.0)
 
@@ -28,6 +28,9 @@ static NSString * const kRateKey = @"rate";
 #if USE_VIDEO_OUTPUT
 @synthesize videoOutput = _videoOutput;
 #endif
+
+@synthesize pixelFormatType;
+@synthesize figureBestPixelFormat;
 
 
 static const void *ItemStatusContext = &ItemStatusContext;
@@ -89,6 +92,8 @@ static const void *PlayerRateContext = &ItemStatusContext;
 		// we are lacking interfaces for audiodata
 		bSampleAudio = NO;
 		
+		// default to
+		figureBestPixelFormat = NO;
 		pixelFormatType = kCVPixelFormatType_422YpCbCr8;
 	}
 	return self;
@@ -97,7 +102,7 @@ static const void *PlayerRateContext = &ItemStatusContext;
 #if USE_VIDEO_OUTPUT
 - (void)createVideoOutput
 {
-	NSLog(@"create videoOutput with pixelFormat: %@", [pixelFormatUtils getPixelFormatString:pixelFormatType]);
+	NSLog(@"create videoOutput with pixelFormat: %@", [NSString stringWithUTF8String:getPixelFormatString(pixelFormatType)]);
 	
 #ifdef TARGET_IOS
 	NSDictionary *pixBuffAttributes = @{(id)kCVPixelBufferPixelFormatTypeKey: @(pixelFormatType)};
@@ -312,20 +317,21 @@ static const void *PlayerRateContext = &ItemStatusContext;
 				videoHeight = trackDimensions.height;
 				
 
-				CMVideoCodecType codecType = CMVideoFormatDescriptionGetCodecType(formatDescription);
-				NSLog(@"codecType: %u", (unsigned int)codecType);
-				OSType pixelFormat = [pixelFormatUtils pixelFormatBestGuess:codecType];
-				
-				// recreate videoOutput if pixelformat changed
-				if (pixelFormatType != pixelFormat) {
-					// recreate video-output
-					pixelFormatType = pixelFormat;
+				if (figureBestPixelFormat) {
+					CMVideoCodecType codecType = CMVideoFormatDescriptionGetCodecType(formatDescription);
+					OSType pixelFormat = pixelFormatBestGuess(codecType);
+					
+					// recreate videoOutput if pixelformat changed
+					if (pixelFormatType != pixelFormat) {
+						// recreate video-output
+						pixelFormatType = pixelFormat;
 #if USE_VIDEO_OUTPUT
-					if (self.videoOutput != nil) {
-						self.videoOutput = nil;
-					}
-					[self createVideoOutput];
+						if (self.videoOutput != nil) {
+							self.videoOutput = nil;
+						}
+						[self createVideoOutput];
 #endif
+					}
 				}
 
 				
@@ -363,6 +369,8 @@ static const void *PlayerRateContext = &ItemStatusContext;
 					
 					NSLog(@"clean aperture: %ld x %ld", [(NSNumber*)w longValue], [(NSNumber*)h longValue]);
 					NSLog(@"clean aperture offset: %ld - %ld", [(NSNumber*)ox longValue], [(NSNumber*)oy longValue]);
+				} else {
+					NSLog(@"no clean aperture description");
 				}
 				
 			} else {

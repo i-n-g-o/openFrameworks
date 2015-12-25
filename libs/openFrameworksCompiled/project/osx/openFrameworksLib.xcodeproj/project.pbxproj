@@ -156,8 +156,7 @@
 		E703369415D4B03E009A3FDE /* ofQTKitGrabber.mm in Sources */ = {isa = PBXBuildFile; fileRef = E703368E15D4B03E009A3FDE /* ofQTKitGrabber.mm */; };
 		E703369515D4B03E009A3FDE /* ofQTKitPlayer.h in Headers */ = {isa = PBXBuildFile; fileRef = E703368F15D4B03E009A3FDE /* ofQTKitPlayer.h */; };
 		E703369615D4B03E009A3FDE /* ofQTKitPlayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = E703369015D4B03E009A3FDE /* ofQTKitPlayer.mm */; };
-		F59487BE1C2CA27A00CFF78C /* pixelFormatUtils.h in Headers */ = {isa = PBXBuildFile; fileRef = F59487BC1C2CA27A00CFF78C /* pixelFormatUtils.h */; settings = {ASSET_TAGS = (); }; };
-		F59487BF1C2CA27A00CFF78C /* pixelFormatUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = F59487BD1C2CA27A00CFF78C /* pixelFormatUtils.m */; settings = {ASSET_TAGS = (); }; };
+		F59487C31C2D409600CFF78C /* ofCMCodecCVPixelFormat.h in Headers */ = {isa = PBXBuildFile; fileRef = F59487C11C2D409600CFF78C /* ofCMCodecCVPixelFormat.h */; settings = {ASSET_TAGS = (); }; };
 		FDFC9EF21600D70700EDD797 /* ofQTKitMovieRenderer.h in Headers */ = {isa = PBXBuildFile; fileRef = FDFC9EF01600D70500EDD797 /* ofQTKitMovieRenderer.h */; };
 		FDFC9EF31600D70700EDD797 /* ofQTKitMovieRenderer.m in Sources */ = {isa = PBXBuildFile; fileRef = FDFC9EF11600D70600EDD797 /* ofQTKitMovieRenderer.m */; };
 /* End PBXBuildFile section */
@@ -328,8 +327,8 @@
 		E703368E15D4B03E009A3FDE /* ofQTKitGrabber.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ofQTKitGrabber.mm; sourceTree = "<group>"; };
 		E703368F15D4B03E009A3FDE /* ofQTKitPlayer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofQTKitPlayer.h; sourceTree = "<group>"; };
 		E703369015D4B03E009A3FDE /* ofQTKitPlayer.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ofQTKitPlayer.mm; sourceTree = "<group>"; };
-		F59487BC1C2CA27A00CFF78C /* pixelFormatUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = pixelFormatUtils.h; sourceTree = "<group>"; };
-		F59487BD1C2CA27A00CFF78C /* pixelFormatUtils.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = pixelFormatUtils.m; sourceTree = "<group>"; };
+		F59487C11C2D409600CFF78C /* ofCMCodecCVPixelFormat.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofCMCodecCVPixelFormat.h; sourceTree = "<group>"; };
+		F59487C41C2D6D1F00CFF78C /* ofCVPixelFormatConversion.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ofCVPixelFormatConversion.h; sourceTree = "<group>"; };
 		FDFC9EF01600D70500EDD797 /* ofQTKitMovieRenderer.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ofQTKitMovieRenderer.h; sourceTree = "<group>"; };
 		FDFC9EF11600D70600EDD797 /* ofQTKitMovieRenderer.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ofQTKitMovieRenderer.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -462,8 +461,8 @@
 				6766729D1A749D1900400051 /* ofAVFoundationVideoPlayer.m */,
 				6766729E1A749D1900400051 /* ofAVFoundationPlayer.h */,
 				676672A21A749D1900400051 /* ofAVFoundationPlayer.mm */,
-				F59487BC1C2CA27A00CFF78C /* pixelFormatUtils.h */,
-				F59487BD1C2CA27A00CFF78C /* pixelFormatUtils.m */,
+				F59487C11C2D409600CFF78C /* ofCMCodecCVPixelFormat.h */,
+				F59487C41C2D6D1F00CFF78C /* ofCVPixelFormatConversion.h */,
 			);
 			name = video;
 			path = ../../../openFrameworks/video;
@@ -676,6 +675,7 @@
 				E4F3BB1912F4C752002D19BB /* ofBitmapFont.h in Headers */,
 				E4F3BB1D12F4C752002D19BB /* ofGraphics.h in Headers */,
 				E4F3BB1F12F4C752002D19BB /* ofImage.h in Headers */,
+				F59487C31C2D409600CFF78C /* ofCMCodecCVPixelFormat.h in Headers */,
 				E4F3BB2112F4C752002D19BB /* ofPixels.h in Headers */,
 				E4F3BB2B12F4C752002D19BB /* ofTessellator.h in Headers */,
 				E4F3BB2F12F4C752002D19BB /* ofTrueTypeFont.h in Headers */,
@@ -709,7 +709,6 @@
 				2E6EA7061603AABD00B7ADF3 /* of3dPrimitives.h in Headers */,
 				229EB9A61B3181C800FF7B5F /* ofEvent.h in Headers */,
 				22FAD01F17049373002A7EB3 /* ofAppGLFWWindow.h in Headers */,
-				F59487BE1C2CA27A00CFF78C /* pixelFormatUtils.h in Headers */,
 				22769592170D9DD200604FC3 /* ofMatrixStack.h in Headers */,
 				22246D94176C9987008A8AF4 /* ofGLProgrammableRenderer.h in Headers */,
 				22246D98176C9AA0008A8AF4 /* ofAppGlutWindow.h in Headers */,
@@ -772,7 +771,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				E4B27C1910CBEB9D00536013 /* ofAppRunner.cpp in Sources */,
-				F59487BF1C2CA27A00CFF78C /* pixelFormatUtils.m in Sources */,
 				E4B27C1A10CBEB9D00536013 /* ofArduino.cpp in Sources */,
 				E4B27C1B10CBEB9D00536013 /* ofSerial.cpp in Sources */,
 				E4B27C2510CBEB9D00536013 /* ofQtUtils.cpp in Sources */,

@@ -10,7 +10,6 @@
 #import <Accelerate/Accelerate.h>
 #import <CoreMedia/CoreMedia.h>
 
-
 //----------------------------------------------------------
 #include <TargetConditionals.h>
 #if (TARGET_OS_IPHONE_SIMULATOR) || (TARGET_OS_IPHONE) || (TARGET_IPHONE)
@@ -87,6 +86,7 @@ typedef enum _playerLoopType{
 	NSCondition* deallocCond;
 	
 	OSType pixelFormatType;
+	BOOL figureBestPixelFormat;
 }
 
 @property (nonatomic, retain) AVPlayer * player;
@@ -101,6 +101,9 @@ typedef enum _playerLoopType{
 #if USE_VIDEO_OUTPUT
 @property (nonatomic, retain) AVPlayerItemVideoOutput *videoOutput;
 #endif
+
+@property (nonatomic, readwrite) OSType pixelFormatType;
+@property (nonatomic, readwrite) BOOL figureBestPixelFormat;
 
 
 - (BOOL)loadWithFile:(NSString*)file async:(BOOL)bAsync;
