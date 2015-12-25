@@ -695,12 +695,12 @@ enum ofPixelFormat{
 	OF_PIXELS_RGB565=6,
 
 	// yuv
-	OF_PIXELS_NV12=7,
-	OF_PIXELS_NV21=8,
-	OF_PIXELS_YV12=9,
-	OF_PIXELS_I420=10,
-	OF_PIXELS_YUY2=11,
-	OF_PIXELS_UYVY=12,
+	OF_PIXELS_NV12=7,	// 8-bit Y plane followed by an interleaved U/V plane with 2x2 subsampling (420)
+	OF_PIXELS_NV21=8,	// As NV12 with U and V reversed in the interleaved plane (420)
+	OF_PIXELS_YV12=9,	// 8 bit Y plane followed by 8 bit 2x2 subsampled V and U planes. (420)
+	OF_PIXELS_I420=10,	// 8 bit Y plane followed by 8 bit 2x2 subsampled U and V planes. (420)
+	OF_PIXELS_YUY2=11,	// YUV 4:2:2 as for UYVY but with different component ordering within the u_int32 macropixel.
+	OF_PIXELS_UYVY=12,	// YUV 4:2:2 (Y sample at every pixel, U and V sampled at every second pixel horizontally on each line). A macropixel contains 2 pixels in 1 u_int32.
 
 	// yuv planes
 	OF_PIXELS_Y,
