@@ -86,8 +86,7 @@ OSType pixelFormatBestGuess(CMVideoCodecType codecType) {
 			break;
 			
 		case kCMVideoCodecType_AppleProRes4444:
-			
-			break;
+			return kCVPixelFormatType_4444YpCbCrA8;
 		case kCMVideoCodecType_AppleProRes422HQ:
 			return kCVPixelFormatType_422YpCbCr8;
 		case kCMVideoCodecType_AppleProRes422:
