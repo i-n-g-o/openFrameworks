@@ -338,10 +338,8 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
 	if(bResetPixels == true) {
 		
 		if (pixelFormat == OF_PIXELS_NATIVE) {
-			ofLogNotice() << "is native, use: OF_PIXELS_RGBA";
 			pixels.allocate(getWidth(), getHeight(), OF_PIXELS_RGBA);
 		} else {
-			ofLogNotice() << "allocate pixels: " << getWidth() << ":" << getHeight() << " ::: " << ofToString((ofPixelFormat)pixelFormat);
 			pixels.allocate(getWidth(), getHeight(), pixelFormat);
 		}
 		
