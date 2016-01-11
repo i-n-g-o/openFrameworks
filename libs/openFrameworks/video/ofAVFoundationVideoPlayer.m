@@ -310,25 +310,9 @@ static const void *PlayerRateContext = &ItemStatusContext;
 				NSLog(@"codec: %@", [NSString stringWithUTF8String:getCodecName(codecType)]);
 				
 
-				if (figureBestPixelFormat) {
-					OSType pixelFormat = pixelFormatBestGuess(codecType);
-					
-					// recreate videoOutput if pixelformat changed
-					if (pixelFormatType != pixelFormat) {
-						// recreate video-output
-						pixelFormatType = pixelFormat;
-#if USE_VIDEO_OUTPUT
-						if (self.videoOutput != nil) {
-							self.videoOutput = nil;
-						}
-						[self createVideoOutput];
-#endif
-					}
-				}
-
-				
-				// get 
+				// get has alpha
 				CFDictionaryRef extDict = CMFormatDescriptionGetExtensions(formatDescription);
+				bool hasAlpha = false;
 				
 				if (extDict) {
 					
@@ -341,9 +325,7 @@ static const void *PlayerRateContext = &ItemStatusContext;
 							CFNumberGetValue(num, kCFNumberIntType, &return_value);
 							
 							if (return_value == 32) {
-								NSLog(@"has depth key32, should use some pixelformat with alpha");
-							} else {
-								NSLog(@"has depth key: value: %d", return_value);
+								hasAlpha = true;
 							}
 							
 							CFRelease(num);
@@ -369,6 +351,29 @@ static const void *PlayerRateContext = &ItemStatusContext;
 //					CFStringRef fname = (CFStringRef)CFDictionaryGetValue(extDict, CFSTR("FormatName"));
 //					NSLog(@"FormatName: %@", fname);
 				}
+				
+				
+				if (figureBestPixelFormat) {
+					
+					// temporarily: overwrite hasAlpha
+					hasAlpha = false;
+					NSLog(@"get pixelFormat with alpha: %d", hasAlpha);
+					
+					OSType pixelFormat = pixelFormatBestGuess(codecType, hasAlpha);
+					
+					// recreate videoOutput if pixelformat changed
+					if (pixelFormatType != pixelFormat) {
+						// recreate video-output
+						pixelFormatType = pixelFormat;
+#if USE_VIDEO_OUTPUT
+						if (self.videoOutput != nil) {
+							self.videoOutput = nil;
+						}
+						[self createVideoOutput];
+#endif
+					}
+				}
+				
 				
 				
 				// get clean aperture?
