@@ -354,9 +354,7 @@ static const void *PlayerRateContext = &ItemStatusContext;
 				
 				
 				if (figureBestPixelFormat) {
-					
-					// temporarily: overwrite hasAlpha
-					hasAlpha = false;
+
 					NSLog(@"get pixelFormat with alpha: %d", hasAlpha);
 					
 					OSType pixelFormat = pixelFormatBestGuess(codecType, hasAlpha);

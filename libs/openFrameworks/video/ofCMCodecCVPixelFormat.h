@@ -12,6 +12,16 @@
 #include <CoreMedia/CMFormatDescription.h>
 
 OSType pixelFormatBestGuess(CMVideoCodecType codecType, bool hasAlpha) {
+	
+	if (hasAlpha) {
+#ifdef TARGET_OF_IOS
+		return kCVPixelFormatType_32BGRA;
+#else
+		return kCVPixelFormatType_32ARGB;
+#endif
+		
+	}
+	
 	switch (codecType) {
 		case kCMVideoCodecType_422YpCbCr8:
 			return kCVPixelFormatType_422YpCbCr8;
@@ -87,11 +97,9 @@ OSType pixelFormatBestGuess(CMVideoCodecType codecType, bool hasAlpha) {
 			break;
 			
 		case kCMVideoCodecType_AppleProRes4444:
-			if (hasAlpha) {
-				return kCVPixelFormatType_4444YpCbCrA8;
-//				return kCVPixelFormatType_4444AYpCbCr16;
-//				return kCVPixelFormatType_64ARGB;
-			}
+//			return kCVPixelFormatType_4444YpCbCrA8;
+//			return kCVPixelFormatType_4444AYpCbCr16;
+//			return kCVPixelFormatType_64ARGB;
 			return kCVPixelFormatType_422YpCbCr8;
 			
 		case kCMVideoCodecType_AppleProRes422HQ:

@@ -340,6 +340,7 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
 		
 		if (pixelFormat == OF_PIXELS_NATIVE) {
 			ofLogNotice() << "imageBufferPixelFormat: " << getPixelFormatString(imageBufferPixelFormat);
+			ofLogNotice() << "w: " << getWidth() << " h:" << getHeight();
 			pixels.allocate(getWidth(), getHeight(), getOFPixelFormat(imageBufferPixelFormat));
 		} else {
 			pixels.allocate(getWidth(), getHeight(), pixelFormat);
@@ -494,10 +495,6 @@ void ofAVFoundationPlayer::initTextureCache() {
                                                      imageBuffer,
                                                      nullptr,
                                                      &_videoTextureRef);
-
-	if(err) {
-		ofLogError("ofAVFoundationPlayer_1") << "CVOpenGLTextureCacheCreateTextureFromImage(): error creating texture cache from image " << err << ".";
-	}
 	
     textureCacheID = CVOpenGLTextureGetName(_videoTextureRef);
     
