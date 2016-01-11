@@ -288,17 +288,6 @@ static const void *PlayerRateContext = &ItemStatusContext;
 			self.asset = asset;
 			duration = _duration;
 			
-			// create asset reader
-			BOOL bOk = [self createAssetReaderWithTimeRange:CMTimeRangeMake(kCMTimeZero, duration)];
-			if(bOk == NO) {
-				NSLog(@"problem with creating asset reader.");
-				if(bAsync == NO){
-					dispatch_semaphore_signal(sema);
-				}
-				[asyncLock unlock];
-				return;
-			}
-			
 			
 			AVAssetTrack * videoTrack = [videoTracks objectAtIndex:0];
 			frameRate = videoTrack.nominalFrameRate;
@@ -316,9 +305,12 @@ static const void *PlayerRateContext = &ItemStatusContext;
 				videoWidth = trackDimensions.width;
 				videoHeight = trackDimensions.height;
 				
+				
+				CMVideoCodecType codecType = CMVideoFormatDescriptionGetCodecType(formatDescription);
+				NSLog(@"codec: %@", [NSString stringWithUTF8String:getCodecName(codecType)]);
+				
 
 				if (figureBestPixelFormat) {
-					CMVideoCodecType codecType = CMVideoFormatDescriptionGetCodecType(formatDescription);
 					OSType pixelFormat = pixelFormatBestGuess(codecType);
 					
 					// recreate videoOutput if pixelformat changed
@@ -335,9 +327,33 @@ static const void *PlayerRateContext = &ItemStatusContext;
 				}
 
 				
-//				// get 
-//				CFDictionaryRef extDict = CMFormatDescriptionGetExtensions(formatDescription);
-//				if (extDict) {
+				// get 
+				CFDictionaryRef extDict = CMFormatDescriptionGetExtensions(formatDescription);
+				
+				if (extDict) {
+					
+					if (CFDictionaryContainsKey(extDict, kCMFormatDescriptionExtension_Depth)) {
+						
+						int                 return_value = 0;
+						
+						CFNumberRef num = (CFNumberRef)CFDictionaryGetValue(extDict, kCMFormatDescriptionExtension_Depth);
+						if (num) {
+							CFNumberGetValue(num, kCFNumberIntType, &return_value);
+							
+							if (return_value == 32) {
+								NSLog(@"has depth key32, should use some pixelformat with alpha");
+							} else {
+								NSLog(@"has depth key: value: %d", return_value);
+							}
+							
+							CFRelease(num);
+							num = NULL;
+						}
+						
+					} else {
+						NSLog(@"has no depth key");
+					}
+					
 //					CFIndex count = CFDictionaryGetCount(extDict);
 //					NSLog(@"has extDict: %ld", count);
 //					
@@ -352,7 +368,7 @@ static const void *PlayerRateContext = &ItemStatusContext;
 //					
 //					CFStringRef fname = (CFStringRef)CFDictionaryGetValue(extDict, CFSTR("FormatName"));
 //					NSLog(@"FormatName: %@", fname);
-//				}
+				}
 				
 				
 				// get clean aperture?
@@ -377,6 +393,18 @@ static const void *PlayerRateContext = &ItemStatusContext;
 				// get width and height from videotrack
 				videoWidth = [videoTrack naturalSize].width;
 				videoHeight = [videoTrack naturalSize].height;
+			}
+			
+			
+			// create asset reader
+			BOOL bOk = [self createAssetReaderWithTimeRange:CMTimeRangeMake(kCMTimeZero, duration)];
+			if(bOk == NO) {
+				NSLog(@"problem with creating asset reader.");
+				if(bAsync == NO){
+					dispatch_semaphore_signal(sema);
+				}
+				[asyncLock unlock];
+				return;
 			}
 			
 			NSLog(@"video loaded at %li x %li @ %f fps", (long)videoWidth, (long)videoHeight, frameRate);
@@ -710,6 +738,9 @@ static const void *PlayerRateContext = &ItemStatusContext;
 	
 	//------------------------------------------------------------ add video output.
 	if (bSampleVideo) {
+		
+		NSLog(@"create AVAssetReader with pixelFormat: %@", [NSString stringWithUTF8String:getPixelFormatString(pixelFormatType)]);
+		
 		NSMutableDictionary * videoOutputSettings = [[[NSMutableDictionary alloc] init] autorelease];
 #ifdef TARGET_IOS
 		[videoOutputSettings setObject:[NSNumber numberWithInt:pixelFormatType]

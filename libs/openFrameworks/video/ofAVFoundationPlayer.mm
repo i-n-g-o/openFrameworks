@@ -8,6 +8,7 @@
 #import "ofAVFoundationPlayer.h"
 #import "ofAVFoundationVideoPlayer.h"
 #include "ofCVPixelFormatConversion.h"
+#include "ofCMCodecCVPixelFormat.h"
 
 //--------------------------------------------------------------
 ofAVFoundationPlayer::ofAVFoundationPlayer() {
@@ -143,14 +144,14 @@ void ofAVFoundationPlayer::setPixelFormatForPlayer() {
 	}
 	
 	// set pixelformat
-//	if (pixelFormat == OF_PIXELS_NATIVE) {
-//		videoPlayer.figureBestPixelFormat = YES;
-//	} else {
-//		videoPlayer.figureBestPixelFormat = NO;
-//		videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
-//	}
+	if (pixelFormat == OF_PIXELS_NATIVE) {
+		videoPlayer.figureBestPixelFormat = YES;
+	} else {
+		videoPlayer.figureBestPixelFormat = NO;
+		videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
+	}
 
-	videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
+//	videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
 	
 }
 
@@ -338,7 +339,8 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
 	if(bResetPixels == true) {
 		
 		if (pixelFormat == OF_PIXELS_NATIVE) {
-			pixels.allocate(getWidth(), getHeight(), OF_PIXELS_RGBA);
+			ofLogNotice() << "imageBufferPixelFormat: " << getPixelFormatString(imageBufferPixelFormat);
+			pixels.allocate(getWidth(), getHeight(), getOFPixelFormat(imageBufferPixelFormat));
 		} else {
 			pixels.allocate(getWidth(), getHeight(), pixelFormat);
 		}
@@ -362,9 +364,8 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
     
 	
 	//----
-	// only convert if OF_PIXELS_NATIVE
-	if (pixelFormat == OF_PIXELS_NATIVE) {
-		
+	if (pixelFormat == OF_PIXELS_RGBA) {
+	
 		vImage_Error err = kvImageNoError;
 		
 		// target pixel pixelformat is RGBA
@@ -387,16 +388,18 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
 		if(err != kvImageNoError) {
 			ofLogError("ofAVFoundationPlayer") << "getPixels(): error in pixel copy, vImage_error = " << err << ".";
 		}
-		
 	} else {
+		
 		// copy pixels
-		if (CVPixelBufferGetBaseAddress(imageBuffer) != NULL) {
-			pixels.setFromPixels((unsigned char*)CVPixelBufferGetBaseAddress(imageBuffer), (int)CVPixelBufferGetWidth(imageBuffer), (int)CVPixelBufferGetHeight(imageBuffer), pixels.getPixelFormat());
+		void *adr = CVPixelBufferGetBaseAddress(imageBuffer);
+		if (adr != NULL) {
+			pixels.setFromPixels((unsigned char*)adr, (int)CVPixelBufferGetWidth(imageBuffer), (int)CVPixelBufferGetHeight(imageBuffer), pixels.getPixelFormat());
 		} else {
 			ofLogError("ofAVFoundationPlayer") << "getPixels(): no pixels to copy";
 		}
+		
+		
 	}
-	
 	
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
 
@@ -409,7 +412,7 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
 //--------------------------------------------------------------
 ofTexture * ofAVFoundationPlayer::getTexturePtr() {
     
-    if(isLoaded() == false) {		
+    if(isLoaded() == false) {
         return &videoTexture;
     }
     
@@ -492,6 +495,10 @@ void ofAVFoundationPlayer::initTextureCache() {
                                                      nullptr,
                                                      &_videoTextureRef);
 
+	if(err) {
+		ofLogError("ofAVFoundationPlayer_1") << "CVOpenGLTextureCacheCreateTextureFromImage(): error creating texture cache from image " << err << ".";
+	}
+	
     textureCacheID = CVOpenGLTextureGetName(_videoTextureRef);
     
 #endif

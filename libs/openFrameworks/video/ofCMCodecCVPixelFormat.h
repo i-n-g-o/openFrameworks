@@ -37,7 +37,8 @@ OSType pixelFormatBestGuess(CMVideoCodecType codecType) {
 			
 			break;
 		case kCMVideoCodecType_H264:
-			return kCVPixelFormatType_420YpCbCr8BiPlanarFullRange;
+//			return kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+			return kCVPixelFormatType_422YpCbCr8;
 		case kCMVideoCodecType_HEVC:
 			
 			break;
@@ -86,7 +87,9 @@ OSType pixelFormatBestGuess(CMVideoCodecType codecType) {
 			break;
 			
 		case kCMVideoCodecType_AppleProRes4444:
-			return kCVPixelFormatType_4444YpCbCrA8;
+//			return kCVPixelFormatType_4444YpCbCrA8;
+//			return kCVPixelFormatType_4444AYpCbCr16;
+			return kCVPixelFormatType_64ARGB;
 		case kCMVideoCodecType_AppleProRes422HQ:
 			return kCVPixelFormatType_422YpCbCr8;
 		case kCMVideoCodecType_AppleProRes422:
@@ -103,6 +106,99 @@ OSType pixelFormatBestGuess(CMVideoCodecType codecType) {
 	
 	//default
 	return kCVPixelFormatType_422YpCbCr8;
+}
+
+const char* getCodecName(CMVideoCodecType codecType) {
+	switch (codecType) {
+		case kCMVideoCodecType_422YpCbCr8:
+			return "kCMVideoCodecType_422YpCbCr8";
+		case kCMVideoCodecType_Animation:
+			return "kCMVideoCodecType_Animation";
+			break;
+		case kCMVideoCodecType_Cinepak:
+			return "kCMVideoCodecType_Cinepak";
+			break;
+		case kCMVideoCodecType_JPEG:
+			return "kCMVideoCodecType_JPEG";
+			break;
+		case kCMVideoCodecType_JPEG_OpenDML:
+			return "kCMVideoCodecType_JPEG_OpenDML";
+			break;
+		case kCMVideoCodecType_SorensonVideo:
+			return "kCMVideoCodecType_SorensonVideo";
+			break;
+		case kCMVideoCodecType_SorensonVideo3:
+			return "kCMVideoCodecType_SorensonVideo3";
+			break;
+		case kCMVideoCodecType_H263:
+			return "kCMVideoCodecType_H263";
+			break;
+		case kCMVideoCodecType_H264:
+			return "kCMVideoCodecType_H264";
+		case kCMVideoCodecType_HEVC:
+			return "kCMVideoCodecType_HEVC";
+			break;
+		case kCMVideoCodecType_MPEG4Video:
+			return "kCMVideoCodecType_MPEG4Video";
+			break;
+		case kCMVideoCodecType_MPEG2Video:
+			return "kCMVideoCodecType_MPEG2Video";
+			break;
+		case kCMVideoCodecType_MPEG1Video:
+			return "kCMVideoCodecType_MPEG1Video";
+			break;
+			
+		case kCMVideoCodecType_DVCNTSC:
+			return "kCMVideoCodecType_DVCNTSC";
+			break;
+		case kCMVideoCodecType_DVCPAL:
+			return "kCMVideoCodecType_DVCPAL";
+			break;
+		case kCMVideoCodecType_DVCProPAL:
+			return "kCMVideoCodecType_DVCProPAL";
+			break;
+		case kCMVideoCodecType_DVCPro50NTSC:
+			return "kCMVideoCodecType_DVCPro50NTSC";
+			break;
+		case kCMVideoCodecType_DVCPro50PAL:
+			return "kCMVideoCodecType_DVCPro50PAL";
+			break;
+		case kCMVideoCodecType_DVCPROHD720p60:
+			return "kCMVideoCodecType_DVCPROHD720p60";
+			break;
+		case kCMVideoCodecType_DVCPROHD720p50:
+			return "kCMVideoCodecType_DVCPROHD720p50";
+			break;
+		case kCMVideoCodecType_DVCPROHD1080i60:
+			return "kCMVideoCodecType_DVCPROHD1080i60";
+			break;
+		case kCMVideoCodecType_DVCPROHD1080i50:
+			return "kCMVideoCodecType_DVCPROHD1080i50";
+			break;
+		case kCMVideoCodecType_DVCPROHD1080p30:
+			return "kCMVideoCodecType_DVCPROHD1080p30";
+			break;
+		case kCMVideoCodecType_DVCPROHD1080p25:
+			return "kCMVideoCodecType_DVCPROHD1080p25";
+			break;
+			
+		case kCMVideoCodecType_AppleProRes4444:
+			return "kCMVideoCodecType_AppleProRes4444";
+		case kCMVideoCodecType_AppleProRes422HQ:
+			return "kCMVideoCodecType_AppleProRes422HQ";
+		case kCMVideoCodecType_AppleProRes422:
+			return "kCMVideoCodecType_AppleProRes422";
+		case kCMVideoCodecType_AppleProRes422LT:
+			return "kCMVideoCodecType_AppleProRes422LT";
+		case kCMVideoCodecType_AppleProRes422Proxy:
+			return "kCMVideoCodecType_AppleProRes422Proxy";
+			
+		default:
+			break;
+	}
+	
+	//default
+	return "unknown codec";
 }
 
 const char* getPixelFormatString(OSType pixelformat) {

@@ -33,10 +33,10 @@ OSType getCVPixelFormat(ofPixelFormat format) {
 			
 		case OF_PIXELS_NV12:	// 8-bit Y plane followed by an interleaved U/V plane with 2x2 subsampling
 		case OF_PIXELS_NV21:	// As NV12 with U and V reversed in the interleaved plane
-			return kCVPixelFormatType_420YpCbCr8BiPlanarFullRange;
+			return kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
 		case OF_PIXELS_YV12:	// 8 bit Y plane followed by 8 bit 2x2 subsampled V and U planes.
 		case OF_PIXELS_I420:	// 8 bit Y plane followed by 8 bit 2x2 subsampled U and V planes.
-			return kCVPixelFormatType_420YpCbCr8BiPlanarFullRange;
+			return kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
 		case OF_PIXELS_YUY2:	// YUV 4:2:2 as for UYVY but with different component ordering within the u_int32 macropixel.
 		case OF_PIXELS_UYVY:	// YUV 4:2:2 (Y sample at every pixel, U and V sampled at every second pixel horizontally on each line). A macropixel contains 2 pixels in 1 u_int32.
 			return kCVPixelFormatType_422YpCbCr8;
@@ -53,6 +53,7 @@ OSType getCVPixelFormat(ofPixelFormat format) {
 			return kCVPixelFormatType_32ARGB;
 			
 		case OF_PIXELS_NATIVE:
+			return kCVPixelFormatType_422YpCbCr8;
 #ifdef TARGET_IOS
 			return kCVPixelFormatType_32BGRA;
 #else
