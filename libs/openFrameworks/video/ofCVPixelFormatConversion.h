@@ -99,7 +99,13 @@ ofPixelFormat getOFPixelFormat(OSType format) {
 		case kCVPixelFormatType_422YpCbCr8FullRange:
 		case kCVPixelFormatType_422YpCbCr8:
 			return OF_PIXELS_UYVY;
+
+		case kCVPixelFormatType_4444YpCbCrA8:
+		case kCVPixelFormatType_4444AYpCbCr16:
+			return OF_PIXELS_UYVY;
 			
+		case kCVPixelFormatType_64ARGB:
+			return OF_PIXELS_ARGB;
 			
 		default:
 			break;
