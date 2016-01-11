@@ -952,8 +952,13 @@ static const void *PlayerRateContext = &ItemStatusContext;
 		
 		bNewFrame = YES;
 		currentTime = time;
+		CMTime displayTime;
 		
-		CVPixelBufferRef buffer = [self.videoOutput copyPixelBufferForItemTime:time itemTimeForDisplay:NULL];
+		CVPixelBufferRef buffer = [self.videoOutput copyPixelBufferForItemTime:time itemTimeForDisplay:&displayTime];
+		
+		if (buffer == NULL) {
+			NSLog(@"buffer == NULL");
+		}
 		
 		// create or update video format description
 		if (!_videoInfo || !CMVideoFormatDescriptionMatchesImageBuffer(_videoInfo, buffer)) {

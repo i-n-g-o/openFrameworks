@@ -143,13 +143,15 @@ void ofAVFoundationPlayer::setPixelFormatForPlayer() {
 	}
 	
 	// set pixelformat
-	if (pixelFormat == OF_PIXELS_NATIVE) {
-		videoPlayer.figureBestPixelFormat = YES;
-	} else {
-		videoPlayer.figureBestPixelFormat = NO;
-		videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
-	}
+//	if (pixelFormat == OF_PIXELS_NATIVE) {
+//		videoPlayer.figureBestPixelFormat = YES;
+//	} else {
+//		videoPlayer.figureBestPixelFormat = NO;
+//		videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
+//	}
 
+	videoPlayer.pixelFormatType = getCVPixelFormat(pixelFormat);
+	
 }
 
 //--------------------------------------------------------------
@@ -207,6 +209,7 @@ bool ofAVFoundationPlayer::setPixelFormat(ofPixelFormat value) {
 	// rgb
     bValid = bValid || (value == OF_PIXELS_RGB);
     bValid = bValid || (value == OF_PIXELS_RGBA);
+	bValid = bValid || (value == OF_PIXELS_ARGB);
 	
 	// YUV
 	// 420-sampling types
@@ -335,9 +338,10 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
 	if(bResetPixels == true) {
 		
 		if (pixelFormat == OF_PIXELS_NATIVE) {
-			ofLogNotice() << "is native";
-			pixels.allocate(getWidth(), getHeight(), getOFPixelFormat(imageBufferPixelFormat));
+			ofLogNotice() << "is native, use: OF_PIXELS_RGBA";
+			pixels.allocate(getWidth(), getHeight(), OF_PIXELS_RGBA);
 		} else {
+			ofLogNotice() << "allocate pixels: " << getWidth() << ":" << getHeight() << " ::: " << ofToString((ofPixelFormat)pixelFormat);
 			pixels.allocate(getWidth(), getHeight(), pixelFormat);
 		}
 		
@@ -358,42 +362,46 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
         static_cast<size_t>(pixels.getWidth() * pixels.getNumChannels())
     };
     
-    vImage_Error err = kvImageNoError;
-    
-    if(pixelFormat == OF_PIXELS_RGBA) {
-        
-        if(imageBufferPixelFormat == kCVPixelFormatType_32ARGB) {
-            
-            uint8_t permuteMap[4] = { 1, 2, 3, 0 };
-            err = vImagePermuteChannels_ARGB8888(&src, &dest, permuteMap, 0);
-            
-        } else if(imageBufferPixelFormat == kCVPixelFormatType_32BGRA) {
-            
-            uint8_t permuteMap[4] = { 2, 1, 0, 3 };
-            err = vImagePermuteChannels_ARGB8888(&src, &dest, permuteMap, 0);
-        }
-        
-    } else if(pixelFormat == OF_PIXELS_RGB) {
-        
-        if(imageBufferPixelFormat == kCVPixelFormatType_32ARGB) {
-            
-            err = vImageConvert_ARGB8888toRGB888(&src, &dest, 0);
-            
-        } else if(imageBufferPixelFormat == kCVPixelFormatType_32BGRA) {
-            
-#ifdef __IPHONE_6_0
-            err = vImageConvert_BGRA8888toRGB888(&src, &dest, 0);
-#else
-            ofLogError("ofAVFoundationPlayer") << "getPixels(): OF_PIXELS_RGB is not supported, use setPixelFormat() to set the pixel format to OF_PIXELS_RGBA.";
-#endif
-        }
-    }
-    
+	
+	//----
+	// only convert if OF_PIXELS_NATIVE
+	if (pixelFormat == OF_PIXELS_NATIVE) {
+		
+		vImage_Error err = kvImageNoError;
+		
+		// target pixel pixelformat is RGBA
+		// internal pixelformat 32ARGB for osx or 32BGRA for ios
+		if(imageBufferPixelFormat == kCVPixelFormatType_32ARGB) {
+			
+			uint8_t permuteMap[4] = { 1, 2, 3, 0 };
+			err = vImagePermuteChannels_ARGB8888(&src, &dest, permuteMap, 0);
+			
+		} else if(imageBufferPixelFormat == kCVPixelFormatType_32BGRA) {
+			
+			uint8_t permuteMap[4] = { 2, 1, 0, 3 };
+			err = vImagePermuteChannels_ARGB8888(&src, &dest, permuteMap, 0);
+			
+		} else if (imageBufferPixelFormat == kCVPixelFormatType_32RGBA) {
+			// just copy pixels
+			pixels.setFromPixels((unsigned char*)CVPixelBufferGetBaseAddress(imageBuffer), (int)CVPixelBufferGetWidth(imageBuffer), (int)CVPixelBufferGetHeight(imageBuffer), pixelFormat);			
+		}
+		
+		if(err != kvImageNoError) {
+			ofLogError("ofAVFoundationPlayer") << "getPixels(): error in pixel copy, vImage_error = " << err << ".";
+		}
+		
+	} else {
+		// copy pixels
+		if (CVPixelBufferGetBaseAddress(imageBuffer) != NULL) {
+			pixels.setFromPixels((unsigned char*)CVPixelBufferGetBaseAddress(imageBuffer), (int)CVPixelBufferGetWidth(imageBuffer), (int)CVPixelBufferGetHeight(imageBuffer), pixels.getPixelFormat());
+		} else {
+			ofLogError("ofAVFoundationPlayer") << "getPixels(): no pixels to copy";
+		}
+	}
+	
+	
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-    
-    if(err != kvImageNoError) {
-        ofLogError("ofAVFoundationPlayer") << "getPixels(): error in pixel copy, vImage_error = " << err << ".";
-    }
+
     
     bUpdatePixels = false;
     

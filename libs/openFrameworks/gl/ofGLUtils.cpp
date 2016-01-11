@@ -81,6 +81,7 @@ int ofGetGlInternalFormat(const ofFloatPixels& pix) {
 string ofGetGlInternalFormatName(int glInternalFormat) {
 	switch(glInternalFormat) {
 		case GL_RGBA: return "GL_RGBA";
+		case GL_BGRA: return "GL_BGRA";
 #ifndef TARGET_OPENGLES
 		case GL_RGBA8: return "GL_RGBA8";
 #endif
@@ -103,6 +104,21 @@ string ofGetGlInternalFormatName(int glInternalFormat) {
 		case GL_LUMINANCE8_ALPHA8: return "GL_LUMINANCE8_ALPHA8";
 #endif
 		default: return "unknown glInternalFormat";
+	}
+}
+
+string ofGetGlInternalTypeName(int glType) {
+	switch(glType) {
+		case GL_UNSIGNED_INT_8_8_8_8_REV: return "GL_UNSIGNED_INT_8_8_8_8_REV";
+		case GL_UNSIGNED_BYTE: return "GL_UNSIGNED_BYTE";
+		case GL_UNSIGNED_SHORT: return "GL_UNSIGNED_SHORT";
+		case GL_UNSIGNED_SHORT_5_6_5: return "GL_UNSIGNED_SHORT_5_6_5";
+		case GL_FLOAT: return "GL_FLOAT";
+		case GL_UNSIGNED_INT_24_8: return "GL_UNSIGNED_INT_24_8";
+		case GL_UNSIGNED_INT: return "GL_UNSIGNED_INT";
+		case GL_UNSIGNED_INT_8_8_8_8: return "GL_UNSIGNED_INT_8_8_8_8";
+		
+		default: return "unknown glType";
 	}
 }
 
@@ -190,6 +206,7 @@ int ofGetGlTypeFromInternal(int glInternalFormat){
 	switch(glInternalFormat) {
 		case GL_RGB:
 		case GL_RGBA:
+		case GL_BGRA:
 		case GL_LUMINANCE:
 		case GL_LUMINANCE_ALPHA:
 		case GL_ALPHA:
@@ -268,7 +285,12 @@ int ofGetGlType(const ofPixels & pixels) {
 		return GL_UNSIGNED_SHORT_5_6_5;
 	}else{
 #endif
-		return GL_UNSIGNED_BYTE;
+		if (pixels.getPixelFormat() == OF_PIXELS_ARGB) {
+			return GL_UNSIGNED_INT_8_8_8_8;
+		} else
+		{
+			return GL_UNSIGNED_BYTE;
+		}
 #ifndef TARGET_OPENGLES
 	}
 #endif
@@ -480,6 +502,8 @@ ofPrimitiveMode ofGetOFPrimitiveMode(GLuint mode){
 
 int ofGetGLInternalFormatFromPixelFormat(ofPixelFormat pixelFormat){
 	switch(pixelFormat){
+	case OF_PIXELS_ARGB:
+//		return GL_BGRA;
 	case OF_PIXELS_BGRA:
 	case OF_PIXELS_RGBA:
 #ifndef TARGET_OPENGLES
@@ -521,6 +545,7 @@ int ofGetGLInternalFormatFromPixelFormat(ofPixelFormat pixelFormat){
 #endif
     case OF_PIXELS_GRAY_ALPHA:
 	case OF_PIXELS_YUY2:
+	case OF_PIXELS_UYVY:
 	case OF_PIXELS_UV:
 	case OF_PIXELS_VU:
 #ifndef TARGET_OPENGLES
@@ -532,14 +557,17 @@ int ofGetGLInternalFormatFromPixelFormat(ofPixelFormat pixelFormat){
 #ifndef TARGET_OPENGLES
 		}
 #endif
+			
 	default:
-		ofLogError("ofGLUtils") << "ofGetGLInternalFormatFromPixelFormat(): unknown OF pixel format" << pixelFormat << ", returning GL_RGBA";
+		ofLogError("ofGLUtils") << "ofGetGLInternalFormatFromPixelFormat(): unknown OF pixel format: " << ofToString(pixelFormat) << ", returning GL_RGBA";
 		return GL_RGBA;
 	}
 }
 
 int ofGetGLFormatFromPixelFormat(ofPixelFormat pixelFormat){
 	switch(pixelFormat){
+		case OF_PIXELS_ARGB:
+			return GL_BGRA;
 	case OF_PIXELS_BGRA:
 #ifdef TARGET_OPENGLES
     	return GL_BGRA_EXT;
@@ -577,6 +605,7 @@ int ofGetGLFormatFromPixelFormat(ofPixelFormat pixelFormat){
 #endif
     case OF_PIXELS_GRAY_ALPHA:
 	case OF_PIXELS_YUY2:
+	case OF_PIXELS_UYVY:
 	case OF_PIXELS_UV:
 	case OF_PIXELS_VU:
 #ifndef TARGET_OPENGLES
@@ -587,7 +616,8 @@ int ofGetGLFormatFromPixelFormat(ofPixelFormat pixelFormat){
 			return GL_LUMINANCE_ALPHA;
 #ifndef TARGET_OPENGLES
 		}
-#endif
+#endif			
+			
 	default:
 		ofLogError("ofGLUtils") << "ofGetGLFormatFromPixelFormat(): unknown OF pixel format" << pixelFormat << ", returning GL_LUMINANCE";
 #ifndef TARGET_OPENGLES

@@ -47,6 +47,7 @@ int ofGetGlInternalFormat(const ofFloatPixels& pix);
 //---------------------------------
 // this is helpful for debugging ofTexture
 string ofGetGlInternalFormatName(int glInternalFormat);
+string ofGetGlInternalTypeName(int glType);
 int ofGetGLFormatFromInternal(int glInternalFormat);
 int ofGetGlTypeFromInternal(int glInternalFormat);
 

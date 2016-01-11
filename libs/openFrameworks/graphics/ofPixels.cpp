@@ -22,6 +22,7 @@ static int pixelBitsFromPixelFormat(ofPixelFormat format){
 		case OF_PIXELS_BGR:
 			return 3 * sizeof(PixelType) * 8;
 
+		case OF_PIXELS_ARGB:
 		case OF_PIXELS_RGBA:
 		case OF_PIXELS_BGRA:
 			return 4 * sizeof(PixelType) * 8;
@@ -65,6 +66,7 @@ static int channelsFromPixelFormat(ofPixelFormat format){
 	case OF_PIXELS_BGR:
 		return 3;
 		break;
+	case OF_PIXELS_ARGB:
 	case OF_PIXELS_RGBA:
 	case OF_PIXELS_BGRA:
 		return 4;
@@ -113,7 +115,7 @@ static ofPixelFormat ofPixelFormatFromImageType(ofImageType type){
 		return OF_PIXELS_RGBA;
 		break;
 	default:
-		ofLog(OF_LOG_ERROR,"ofPixels: image type not supported");
+		ofLog(OF_LOG_ERROR,"ofPixels: image type not supported: %d", type);
 		return OF_PIXELS_UNKNOWN;
 	}
 }
@@ -130,6 +132,7 @@ static ofImageType ofImageTypeFromPixelFormat(ofPixelFormat pixelFormat){
 		break;
 	case OF_PIXELS_BGRA:
 	case OF_PIXELS_RGBA:
+	case OF_PIXELS_ARGB:
 		return OF_IMAGE_COLOR_ALPHA;
 		break;
 	case OF_PIXELS_UNKNOWN:
@@ -150,6 +153,8 @@ string ofToString(ofPixelFormat pixelFormat){
 			return "RGBA";
 		case OF_PIXELS_BGRA:
 			return "BGRA";
+		case OF_PIXELS_ARGB:
+			return "ARGB";
 		case OF_PIXELS_GRAY:
 			return "GRAY";
 		case OF_PIXELS_RGB565:
@@ -273,6 +278,7 @@ void ofPixels_<PixelType>::set(int channel,PixelType val){
 		case OF_PIXELS_RGB:
 		case OF_PIXELS_BGR:
 		case OF_PIXELS_RGBA:
+		case OF_PIXELS_ARGB:
 		case OF_PIXELS_BGRA:
 		case OF_PIXELS_GRAY:
         case OF_PIXELS_GRAY_ALPHA:
@@ -406,6 +412,7 @@ void ofPixels_<PixelType>::setFromAlignedPixels(const PixelType * newPixels, int
 	}
 	case OF_PIXELS_RGB:
 	case OF_PIXELS_RGBA:
+	case OF_PIXELS_ARGB:
 	case OF_PIXELS_GRAY:
 	case OF_PIXELS_GRAY_ALPHA:
 	    setFromAlignedPixels(newPixels,width,height,_pixelFormat,strides[0]);
@@ -559,6 +566,7 @@ int ofPixels_<PixelType>::getPixelIndex(int x, int y) const {
 				return ( x + y * width ) * pixelStride;
 				break;
 			case OF_PIXELS_RGBA:
+			case OF_PIXELS_ARGB:
 			case OF_PIXELS_BGRA:
 				pixelStride = 4;
 				return ( x + y * width ) * pixelStride;
@@ -623,6 +631,12 @@ void ofPixels_<PixelType>::setColor(int index, const ofColor_<PixelType>& color)
 			pixels[index+1] = color.g;
 			pixels[index+2] = color.b;
 			pixels[index+3] = color.a;
+			break;
+		case OF_PIXELS_ARGB:
+			pixels[index] = color.a;
+			pixels[index+1] = color.r;
+			pixels[index+2] = color.g;
+			pixels[index+3] = color.b;
 			break;
 		case OF_PIXELS_BGRA:
 			pixels[index] = color.b;
@@ -689,6 +703,15 @@ void ofPixels_<PixelType>::setColor(const ofColor_<PixelType>& color) {
 			}
 		}
 		break;
+		case OF_PIXELS_ARGB:{
+			for(auto pixel: getPixelsIter()){
+				pixel[0] = color.a;
+				pixel[1] = color.r;
+				pixel[2] = color.g;
+				pixel[3] = color.b;
+			}
+		}
+			break;
 		case OF_PIXELS_BGRA:{
 			for(auto pixel: getPixelsIter()){
 				pixel[0] = color.b;
@@ -809,6 +832,7 @@ int ofPixels_<PixelType>::getNumPlanes() const{
 		case OF_PIXELS_V:
 		case OF_PIXELS_UV:
 		case OF_PIXELS_VU:
+		case OF_PIXELS_ARGB:
 			return 1;
 		case OF_PIXELS_NV12:
 		case OF_PIXELS_NV21:
@@ -843,6 +867,7 @@ ofPixels_<PixelType> ofPixels_<PixelType>::getPlane(int planeIdx){
 		case OF_PIXELS_V:
 		case OF_PIXELS_UV:
 		case OF_PIXELS_VU:
+		case OF_PIXELS_ARGB:
 			plane.setFromExternalPixels(pixels,width,height,pixelFormat);
 			break;
 		case OF_PIXELS_NV12:

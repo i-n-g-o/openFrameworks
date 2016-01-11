@@ -800,6 +800,9 @@ ofColor_<PixelType> ofPixels_<PixelType>::Pixel::getColor() const{
 		case OF_PIXELS_RGBA:
 			c.set( pixel[0], pixel[1], pixel[2], pixel[3] );
 			break;
+		case OF_PIXELS_ARGB:
+			c.set( pixel[1], pixel[2], pixel[3], pixel[0] );
+			break;
 		case OF_PIXELS_BGRA:
 			c.set( pixel[2], pixel[1], pixel[0], pixel[3] );
 			break;
@@ -1170,6 +1173,9 @@ ofColor_<PixelType> ofPixels_<PixelType>::ConstPixel::getColor() const{
 			break;
 		case OF_PIXELS_RGBA:
 			c.set( pixel[0], pixel[1], pixel[2], pixel[3] );
+			break;
+		case OF_PIXELS_ARGB:
+			c.set( pixel[1], pixel[2], pixel[3], pixel[0] );
 			break;
 		case OF_PIXELS_BGRA:
 			c.set( pixel[2], pixel[1], pixel[0], pixel[3] );

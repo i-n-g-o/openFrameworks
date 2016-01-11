@@ -24,8 +24,7 @@ OSType getCVPixelFormat(ofPixelFormat format) {
 		case OF_PIXELS_BGR:
 			return kCVPixelFormatType_24BGR;
 		case OF_PIXELS_RGBA:
-//			return kCVPixelFormatType_32RGBA;
-			return kCVPixelFormatType_32ARGB;
+			return kCVPixelFormatType_32RGBA;
 		case OF_PIXELS_BGRA:
 			return kCVPixelFormatType_32BGRA;
 			
@@ -50,11 +49,21 @@ OSType getCVPixelFormat(ofPixelFormat format) {
 		case OF_PIXELS_VU:
 			return kCVPixelFormatType_TwoComponent8;
 			
+		case OF_PIXELS_ARGB:
+			return kCVPixelFormatType_32ARGB;
+			
+		case OF_PIXELS_NATIVE:
+#ifdef TARGET_IOS
+			return kCVPixelFormatType_32BGRA;
+#else
+			return kCVPixelFormatType_32ARGB;
+#endif
+			
 		default:
 			break;
 	}
 	
-	return kCVPixelFormatType_32RGBA;
+	return kCVPixelFormatType_32ARGB;
 }
 
 
@@ -73,6 +82,8 @@ ofPixelFormat getOFPixelFormat(OSType format) {
 			return OF_PIXELS_RGBA;
 		case kCVPixelFormatType_32BGRA:
 			return OF_PIXELS_BGRA;
+		case kCVPixelFormatType_32ARGB:
+			return OF_PIXELS_ARGB;
 			
 		case kCVPixelFormatType_16LE565:
 		case kCVPixelFormatType_16BE565:

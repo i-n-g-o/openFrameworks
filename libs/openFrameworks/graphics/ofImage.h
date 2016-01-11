@@ -423,6 +423,8 @@ public:
     /// \param type The image type can be OF_IMAGE_GRAYSCALE, OF_IMAGE_COLOR, or OF_IMAGE_COLOR_ALPHA.
     /// \param bOrderIsRGB Pass in pixel data that is BGR by setting bOrderIsRGB=false.
     void setFromPixels(const PixelType * pixels, int w, int h, ofImageType type, bool bOrderIsRGB = true);
+	
+	void setFromPixels(const PixelType * pixels, int w, int h, ofImageType type, ofPixelFormat format, bool bOrderIsRGB = true);
     
     /// \brief Set the pixels of the image from an ofPixels instance.
     ///

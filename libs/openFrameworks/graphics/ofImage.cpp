@@ -940,10 +940,24 @@ void  ofImage_<PixelType>::setFromPixels(const PixelType * newPixels, int w, int
 	update();
 }
 
+template<typename PixelType>
+void  ofImage_<PixelType>::setFromPixels(const PixelType * newPixels, int w, int h, ofImageType type, ofPixelFormat format, bool bOrderIsRGB){
+	
+	allocate(w, h, type);
+	pixels.setFromPixels(newPixels,w,h,format);
+	
+	if (!bOrderIsRGB && sizeof(PixelType) == 1){
+		pixels.swapRgb();
+	}
+	
+	update();
+}
+
+
 //------------------------------------
 template<typename PixelType>
 void ofImage_<PixelType>::setFromPixels(const ofPixels_<PixelType> & pixels){
-	setFromPixels(pixels.getData(),pixels.getWidth(),pixels.getHeight(),pixels.getImageType());
+	setFromPixels(pixels.getData(),pixels.getWidth(),pixels.getHeight(),pixels.getImageType(),pixels.getPixelFormat());
 }
 
 //------------------------------------
