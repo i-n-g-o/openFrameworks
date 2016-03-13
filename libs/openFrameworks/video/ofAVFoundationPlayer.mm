@@ -100,7 +100,6 @@ bool ofAVFoundationPlayer::loadPlayer(string name, bool bAsync) {
 	bLoaded = [videoPlayer loadWithURL:url async:bAsync];
 
 	setPixelFormatForPlayer();
-    bool bLoaded = [videoPlayer loadWithURL:url async:bAsync];
 	
 	pixels.clear();
 	videoTexture.clear();
