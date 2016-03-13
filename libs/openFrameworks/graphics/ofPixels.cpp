@@ -187,15 +187,7 @@ static ofPixelFormat pixelFormatFromNumChannels(int channels){
 }
 
 template<typename PixelType>
-ofPixels_<PixelType>::ofPixels_(){
-	bAllocated = false;
-	pixelsOwner = false;
-	pixelFormat = OF_PIXELS_UNKNOWN;
-	pixels = nullptr;
-	pixelsSize = 0;
-	width = 0;
-	height = 0;
-}
+ofPixels_<PixelType>::ofPixels_(){}
 
 
 template<typename PixelType>
@@ -205,13 +197,6 @@ ofPixels_<PixelType>::~ofPixels_(){
 
 template<typename PixelType>
 ofPixels_<PixelType>::ofPixels_(const ofPixels_<PixelType> & mom){
-	bAllocated = false;
-	pixelsOwner = false;
-	pixelsSize = 0;
-	pixels = nullptr;
-	width = 0;
-	height = 0;
-	pixelFormat = OF_PIXELS_UNKNOWN;
 	copyFrom( mom );
 }
 
@@ -227,6 +212,19 @@ ofPixels_<PixelType>::ofPixels_(ofPixels_<PixelType> && mom)
 	mom.pixelsOwner = false;
 }
 
+
+template<typename PixelType>
+void ofPixels_<PixelType>::swap(ofPixels_<PixelType> & pix){
+	std::swap(pixels,pix.pixels);
+	std::swap(width, pix.width);
+	std::swap(height,pix.height);
+	std::swap(pixelsSize,pix.pixelsSize);
+	std::swap(bAllocated, pix.bAllocated);
+	std::swap(pixelsOwner, pix.pixelsOwner);
+	std::swap(pixelFormat,pix.pixelFormat);
+}
+
+
 template<typename PixelType>
 ofPixels_<PixelType>& ofPixels_<PixelType>::operator=(const ofPixels_<PixelType> & mom){
 	if(this==&mom) {
@@ -241,18 +239,15 @@ ofPixels_<PixelType>& ofPixels_<PixelType>::operator=(ofPixels_<PixelType> && mo
 	if(this==&mom) {
 		return * this;
 	}
-    if(pixelsOwner || !bAllocated || !mom.bAllocated || width!=mom.width || height!=mom.height || pixelFormat != mom.pixelFormat){
-        clear();
-        pixels = mom.pixels;
-        width = mom.width;
-        height = mom.height;
-        pixelsSize = mom.pixelsSize;
-        bAllocated = mom.bAllocated;
-        pixelsOwner = mom.pixelsOwner;
-        mom.pixelsOwner = false;
-    }else{
-        memcpy(pixels, mom.pixels, getTotalBytes());
-    }
+	clear();
+	pixels = mom.pixels;
+	width = mom.width;
+	height = mom.height;
+	pixelsSize = mom.pixelsSize;
+	bAllocated = mom.bAllocated;
+	pixelsOwner = mom.pixelsOwner;
+	pixelFormat = mom.pixelFormat;
+	mom.pixelsOwner = false;
 	return *this;
 }
 
@@ -422,17 +417,6 @@ void ofPixels_<PixelType>::setFromAlignedPixels(const PixelType * newPixels, int
 	    break;
 	}
 	return;
-}
-
-template<typename PixelType>
-void ofPixels_<PixelType>::swap(ofPixels_<PixelType> & pix){
-	std::swap(pixels,pix.pixels);
-	std::swap(width, pix.width);
-	std::swap(height,pix.height);
-	std::swap(pixelFormat,pix.pixelFormat);
-	std::swap(pixelsSize,pix.pixelsSize);
-	std::swap(pixelsOwner, pix.pixelsOwner);
-	std::swap(bAllocated, pix.bAllocated);
 }
 
 template<typename PixelType>
@@ -936,14 +920,16 @@ void ofPixels_<PixelType>::setImageType(ofImageType imageType){
 	dst.allocate(width,height,imageType);
 	PixelType * dstPtr = &dst[0];
 	PixelType * srcPtr = &pixels[0];
+	int dstNumChannels = dst.getNumChannels();
+	int srcNumChannels = getNumChannels();
 	int diffNumChannels = 0;
-	if(dst.getNumChannels()<getNumChannels()){
-		diffNumChannels = getNumChannels()-dst.getNumChannels();
+	if(dstNumChannels<srcNumChannels){
+		diffNumChannels = srcNumChannels-dstNumChannels;
 	}
 	for(int i=0;i<width*height;i++){
 		const PixelType & gray = *srcPtr;
-		for(int j=0;j<dst.getNumChannels();j++){
-			if(j<getNumChannels()){
+		for(int j=0;j<dstNumChannels;j++){
+			if(j<srcNumChannels){
 				*dstPtr++ =  *srcPtr++;
 			}else if(j<3){
 				*dstPtr++ = gray;
@@ -1199,14 +1185,16 @@ void ofPixels_<PixelType>::mirrorTo(ofPixels_<PixelType> & dst, bool vertically,
 	}
 
 	int bytesPerPixel = getNumChannels();
+	dst.allocate(width, height, getPixelFormat());
 
 	if(vertically && !horizontal){
-		ofPixels_<PixelType>::Lines dstLines = dst.getLines();
-		ofPixels_<PixelType>::ConstLine lineSrc = getConstLines().begin();
-		ofPixels_<PixelType>::Line line = --dstLines.end();
+		auto dstLines = dst.getLines();
+		auto lineSrc = getConstLines().begin();
+		auto line = --dstLines.end();
+		auto stride = line.getStride();
 
 		for(; line>=dstLines.begin(); --line, ++lineSrc){
-			memcpy(line.begin(),lineSrc.begin(),line.getStride());
+			memcpy(line.begin(), lineSrc.begin(), stride);
 		}
 	}else if (!vertically && horizontal){
 		int wToDo = width/2;
@@ -1237,7 +1225,7 @@ bool ofPixels_<PixelType>::resize(int dstWidth, int dstHeight, ofInterpolationMe
 	if ((dstWidth<=0) || (dstHeight<=0) || !(isAllocated())) return false;
 
 	ofPixels_<PixelType> dstPixels;
-	dstPixels.allocate(dstWidth, dstHeight,getImageType());
+	dstPixels.allocate(dstWidth, dstHeight, getPixelFormat());
 
 	if(!resizeTo(dstPixels,interpMethod)) return false;
 
