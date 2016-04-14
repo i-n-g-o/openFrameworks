@@ -122,6 +122,8 @@ protected:
 	CVOpenGLTextureRef _videoTextureRef = nullptr;
 #endif
 	
+	CVImageBufferRef lastBuffer;
+	
 private:
 	void setPixelFormatForPlayer();
 };

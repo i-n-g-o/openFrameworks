@@ -24,6 +24,8 @@ ofAVFoundationPlayer::ofAVFoundationPlayer() {
     bUpdatePixels = false;
     bUpdateTexture = false;
 	bUseTextureCache = true;
+	
+	lastBuffer = NULL;
 }
 
 //--------------------------------------------------------------
@@ -46,6 +48,8 @@ ofAVFoundationPlayer& ofAVFoundationPlayer::operator=(ofAVFoundationPlayer other
 	bUpdatePixels = false;
 	bUpdateTexture = false;
 	bUseTextureCache = true;
+	
+	lastBuffer = NULL;
 	
 	std::swap(videoPlayer, other.videoPlayer);
 	return *this;
@@ -97,9 +101,9 @@ bool ofAVFoundationPlayer::loadPlayer(string name, bool bAsync) {
 		[videoPlayer setWillBeUpdatedExternally:YES];
 	}
 	
-	bLoaded = [videoPlayer loadWithURL:url async:bAsync];
-
 	setPixelFormatForPlayer();
+	
+	bLoaded = [videoPlayer loadWithURL:url async:bAsync];
 	
 	pixels.clear();
 	videoTexture.clear();
@@ -141,9 +145,9 @@ bool ofAVFoundationPlayer::loadPlayer(string name, bool bAsync) {
 	}
 
 	
-	if( bAsync == false && bLoaded ){
-		pixels.allocate(getWidth(), getHeight(), getPixelFormat());
-	}
+//	if( bAsync == false && bLoaded ){
+//		pixels.allocate(getWidth(), getHeight(), getPixelFormat());
+//	}
 	
     return bLoaded;
 }
@@ -189,6 +193,12 @@ void ofAVFoundationPlayer::disposePlayer() {
 	// get rid of the textures
 	killTextureCache();
 
+	
+	if (lastBuffer != NULL) {
+		CVPixelBufferRelease(lastBuffer);
+		lastBuffer = NULL;
+	}
+	
 	
 	bFrameNew = false;
 	bResetPixels = false;
@@ -337,7 +347,7 @@ const ofPixels & ofAVFoundationPlayer::getPixels() const {
 }
 
 ofPixels & ofAVFoundationPlayer::getPixels() {
-    if(isLoaded() == false || pixels.size() == 0) {
+    if(isLoaded() == false || (bResetPixels == false && pixels.size() == 0) ) {
         ofLogError("ofAVFoundationPlayer") << "getPixels(): Returning pixels that may be unallocated. Make sure to initialize the video player before calling getPixels.";
         return pixels;
     }
@@ -354,13 +364,23 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
     
     unsigned long imageBufferPixelFormat = CVPixelBufferGetPixelFormatType(imageBuffer);
 	
-	if(bResetPixels == true) {
+	if(bResetPixels == true && imageBufferPixelFormat > 0) {
 		
 		if (pixelFormat == OF_PIXELS_NATIVE) {
+			ofLogNotice() << "imageBufferPixelFormat: " << imageBufferPixelFormat;
+			const char* str = getPixelFormatString(imageBufferPixelFormat);
 			ofLogNotice() << "imageBufferPixelFormat: " << getPixelFormatString(imageBufferPixelFormat);
 			ofLogNotice() << "w: " << getWidth() << " h:" << getHeight();
-			pixels.allocate(getWidth(), getHeight(), getOFPixelFormat(imageBufferPixelFormat));
+			ofPixelFormat f = getOFPixelFormat(imageBufferPixelFormat);
+			
+			ofLogNotice() << "f: " << f;
+			
+			pixels.allocate(getWidth(), getHeight(), f);
+			
+			ofLogNotice() << "size: " << pixels.size();
+			
 		} else {
+			ofLogNotice() << "other pixelformat: " << ofToString(pixelFormat);
 			pixels.allocate(getWidth(), getHeight(), pixelFormat);
 		}
 		
@@ -409,19 +429,75 @@ ofPixels & ofAVFoundationPlayer::getPixels() {
 		}
 	} else {
 		
-		// copy pixels
+	
+		// set pixels
 		void *adr = CVPixelBufferGetBaseAddress(imageBuffer);
 		if (adr != NULL) {
-			pixels.setFromPixels((unsigned char*)adr, (int)CVPixelBufferGetWidth(imageBuffer), (int)CVPixelBufferGetHeight(imageBuffer), pixels.getPixelFormat());
+			
+			if (pixelFormat == OF_PIXELS_NATIVE) {
+
+				
+//				pixels.setFromPixels((unsigned char*)adr, (CVPixelBufferGetBytesPerRow(imageBuffer) / pixels.getNumChannels()), (int)CVPixelBufferGetHeight(imageBuffer), OF_PIXELS_RGBA); // pixels.getPixelFormat()
+
+				
+				pixels.setFromExternalPixels((unsigned char*)adr, (CVPixelBufferGetBytesPerRow(imageBuffer) / pixels.getNumChannels()), (int)CVPixelBufferGetHeight(imageBuffer), pixels.getPixelFormat());
+				
+			} else {
+				// check stride to width
+				if (CVPixelBufferGetWidth(imageBuffer) == (CVPixelBufferGetBytesPerRow(imageBuffer) / pixels.getNumChannels())) {
+					// if stride and width is same
+					pixels.setFromExternalPixels((unsigned char*)adr, (CVPixelBufferGetBytesPerRow(imageBuffer) / pixels.getNumChannels()), (int)CVPixelBufferGetHeight(imageBuffer), pixels.getNumChannels());
+					
+					
+				} else {
+					
+					// copy and remove the padding
+					pixels.setFromAlignedPixels((unsigned char*)adr, CVPixelBufferGetWidth(imageBuffer), CVPixelBufferGetHeight(imageBuffer), pixels.getPixelFormat(), CVPixelBufferGetBytesPerRow(imageBuffer));
+					
+				}
+			}
+			
+			
+			CIImage* img = [CIImage imageWithCVPixelBuffer:imageBuffer];
+
+			NSCIImageRep *rep = [NSCIImageRep imageRepWithCIImage:img];
+			NSImage *nsImage = [[NSImage alloc] initWithSize:rep.size];
+			[nsImage addRepresentation:rep];
+			
+
+			
+			NSData *imageData = [nsImage TIFFRepresentation];
+			NSBitmapImageRep *imageRep = [NSBitmapImageRep imageRepWithData:imageData];
+			NSDictionary *imageProps = [NSDictionary dictionaryWithObject:[NSNumber numberWithFloat:1.0] forKey:NSImageCompressionFactor];
+			imageData = [imageRep representationUsingType:NSJPEGFileType properties:imageProps];
+			[imageData writeToFile:@"/Users/inx/file.tiff" atomically:NO];
+			
+			
+//			[[nsImage representations] objectAtIndex:0];
+		
+//			NSImageRep *imgRep = [[nsImage representations] objectAtIndex: 0];
+//			
+//			NSData *data = [imgRep representationUsingType: NSPNGFileType properties: nil];
+//			[data writeToFile: @"/Users/inx/file.png" atomically: NO];
+			
+			
+			
+			// release old buffer
+			if (lastBuffer != NULL) {
+				CVPixelBufferRelease(lastBuffer);
+				lastBuffer = NULL;
+			}
+			
+			// retain new buffer
+			lastBuffer = imageBuffer;
+			CVPixelBufferRetain(lastBuffer);
+			
 		} else {
 			ofLogError("ofAVFoundationPlayer") << "getPixels(): no pixels to copy";
 		}
-		
-		
 	}
 	
     CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
-
     
     bUpdatePixels = false;
     

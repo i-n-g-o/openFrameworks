@@ -317,10 +317,40 @@ void ofTexture::allocate(int w, int h, int glInternalFormat, int glFormat, int p
 
 //----------------------------------------------------------
 void ofTexture::allocate(const ofPixels& pix){
+	
+//	ofLogNotice() << "pix.getWidth(): " << pix.getWidth();
+//	ofLogNotice() << "pix.getHeight(): " << pix.getHeight();
+//	ofLogNotice() << "ofGetGlInternalFormat(pix): " << ofToHex(ofGetGlInternalFormat(pix));
+//	ofLogNotice() << "ofGetGlFormat(pix): " << ofToHex(ofGetGlFormat(pix));
+//	ofLogNotice() << "ofGetGlType(pix): " << ofToHex(ofGetGlType(pix));
+	
+	// passing: internal: GL_RGBA8, format: GL_BGRA, type: GL_UNSIGNED_INT_8_8_8_8_REV
+	
 	allocate(pix.getWidth(), pix.getHeight(), ofGetGlInternalFormat(pix), ofGetUsingArbTex(), ofGetGlFormat(pix), ofGetGlType(pix));
+	
 	if((pix.getPixelFormat()==OF_PIXELS_GRAY || pix.getPixelFormat()==OF_PIXELS_GRAY_ALPHA) && ofIsGLProgrammableRenderer()){
+		ofLogNotice() << "swizzle";
 		setRGToRGBASwizzles(true);
+		
 	}
+	
+//	if (ofGetGlFormat(pix) == GL_BGRA) {
+//		
+////		ofLogNotice() << "set swizzle";
+//		
+//		setSwizzle(GL_TEXTURE_SWIZZLE_B, GL_ALPHA);
+//		setSwizzle(GL_TEXTURE_SWIZZLE_G, GL_RED);
+//		setSwizzle(GL_TEXTURE_SWIZZLE_R, GL_GREEN);
+//		setSwizzle(GL_TEXTURE_SWIZZLE_A, GL_BLUE);
+//	}
+	
+	
+	
+//	glTexParameteri(texData.textureTarget, GL_TEXTURE_SWIZZLE_R, GL_RED);
+//	glTexParameteri(texData.textureTarget, GL_TEXTURE_SWIZZLE_G, GL_GREEN);
+//	glTexParameteri(texData.textureTarget, GL_TEXTURE_SWIZZLE_B, GL_BLUE);
+//	glTexParameteri(texData.textureTarget, GL_TEXTURE_SWIZZLE_A, GL_ALPHA);
+	
 	if(texData.bAllocated) loadData(pix);
 }
 
@@ -424,25 +454,25 @@ void ofTexture::allocate(const ofTextureData & textureData, int glFormat, int pi
 	//our graphics card might not support arb so we have to see if it is supported.
 #ifndef TARGET_OPENGLES
 	if( texData.textureTarget==GL_TEXTURE_RECTANGLE_ARB && ofGLSupportsNPOTTextures() ){
-		texData.tex_w = texData.width;
-		texData.tex_h = texData.height;
-		texData.tex_t = texData.width;
-		texData.tex_u = texData.height;
+		if(texData.tex_w==0) texData.tex_w = texData.width;
+		if(texData.tex_h==0) texData.tex_h = texData.height;
+		if(texData.tex_t==0) texData.tex_t = texData.width;
+		if(texData.tex_u==0) texData.tex_u = texData.height;
 	}else if(texData.textureTarget == GL_TEXTURE_2D)
 #endif
 	{
 		if(ofGLSupportsNPOTTextures()){
-			texData.tex_w = texData.width;
-			texData.tex_h = texData.height;
+			if(texData.tex_w==0) texData.tex_w = texData.width;
+			if(texData.tex_h==0) texData.tex_h = texData.height;
 		}else{
 			//otherwise we need to calculate the next power of 2 for the requested dimensions
 			//ie (320x240) becomes (512x256)
-			texData.tex_w = ofNextPow2(texData.width);
-			texData.tex_h = ofNextPow2(texData.height);
+			if(texData.tex_w==0) texData.tex_w = ofNextPow2(texData.width);
+			if(texData.tex_h==0) texData.tex_h = ofNextPow2(texData.height);
 		}
 
-		texData.tex_t = texData.width / texData.tex_w;
-		texData.tex_u = texData.height / texData.tex_h;
+		if(texData.tex_t==0)texData.tex_t = texData.width / texData.tex_w;
+		if(texData.tex_u==0)texData.tex_u = texData.height / texData.tex_h;
 	}
 
 	// attempt to free the previous bound texture, if we can:

@@ -286,7 +286,7 @@ int ofGetGlType(const ofPixels & pixels) {
 	}else{
 #endif
 		if (pixels.getPixelFormat() == OF_PIXELS_ARGB) {
-			return GL_UNSIGNED_INT_8_8_8_8;
+			return GL_UNSIGNED_BYTE; //GL_UNSIGNED_INT_8_8_8_8_REV;
 		} else
 		{
 			return GL_UNSIGNED_BYTE;
@@ -619,7 +619,7 @@ int ofGetGLFormatFromPixelFormat(ofPixelFormat pixelFormat){
 #endif			
 			
 	default:
-		ofLogError("ofGLUtils") << "ofGetGLFormatFromPixelFormat(): unknown OF pixel format" << pixelFormat << ", returning GL_LUMINANCE";
+		ofLogError("ofGLUtils") << "ofGetGLFormatFromPixelFormat(): unknown OF pixel format " << pixelFormat << ", returning GL_LUMINANCE";
 #ifndef TARGET_OPENGLES
 		if(ofIsGLProgrammableRenderer()){
 			return GL_RED;
